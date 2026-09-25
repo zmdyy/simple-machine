@@ -422,12 +422,16 @@
     const e = ex();
     const g = geom();
     const step = state.practice ? 0 : state.step;
+    const exploring = state.practice && state.practicePhase === 'explore' && exploreEnabled(e);
+    const em = exploring ? exploreMetrics(g, state.dirDraft || g.d1) : null;
 
     document.getElementById('lifeAction').textContent = e.action;
     document.getElementById('lifeWhy').textContent = e.whyO;
-    document.getElementById('lifeStepBadge').textContent = state.practice
-      ? '你来画'
-      : '步骤 ' + step + ' / 9';
+    document.getElementById('lifeStepBadge').textContent = exploring
+      ? '方向探究'
+      : state.practice
+        ? '你来画'
+        : '步骤 ' + step + ' / 9';
 
     if (step >= 1 || state.practice) {
       if (global.LifeScenes) {
@@ -469,28 +473,60 @@
       S.el('circle', { cx: g.p1.x, cy: g.p1.y, r: 5, fill: C.F1 }, Ldraw);
       S.el('circle', { cx: g.p2.x, cy: g.p2.y, r: 5, fill: C.F2 }, Ldraw);
       if (state.clickedO) S.drawPivot(Ldraw, state.clickedO);
-      if (state.dirDraft) {
-        S.drawForceArrow(Ldraw, g.p1, state.dirDraft, 60, C.F1, 'F₁', { O: state.clickedO || g.O });
+
+      if (exploring && em) {
+        // F1 方向可拖；作用线与 l1 按当前方向实时重算。
+        S.drawForceArrow(Ldraw, g.p1, em.d1, 72, C.F1, 'F₁', { O: em.O });
+        S.drawForceLine(Ldraw, g.p1, em.d1, 190, C.F1);
+        if (!em.nearZero && em.a1.armLen > 4) {
+          S.drawArm(Ldraw, em.O, em.a1.foot, 'l₁', false, C.arm1, em.d1);
+          S.drawRightAngle(Ldraw, em.a1.foot, em.a1.armVec, em.a1.dir, 9, C.arm1);
+        }
+
+        // 阻力及阻力臂固定，作为参照。
+        S.drawForceArrow(Ldraw, g.p2, em.d2, 60, C.F2, 'F₂', { O: em.O });
+        S.drawForceLine(Ldraw, g.p2, em.d2, 170, C.F2);
+        if (em.a2.armLen > 4) {
+          S.drawArm(Ldraw, em.O, em.a2.foot, 'l₂', false, C.arm2, em.d2);
+          S.drawRightAngle(Ldraw, em.a2.foot, em.a2.armVec, em.a2.dir, 9, C.arm2);
+        }
+
+        const tip = K.add(g.p1, K.scale(em.d1, 72));
+        S.el('circle', {
+          cx: tip.x, cy: tip.y, r: 11,
+          fill: '#fff', stroke: C.F1, 'stroke-width': 3,
+          style: 'cursor:grab',
+        }, Lui);
+        S.el('text', {
+          x: tip.x + 14, y: tip.y - 10,
+          fill: C.F1, 'font-size': 11, 'font-weight': 700,
+          stroke: '#fff', 'stroke-width': 3, 'paint-order': 'stroke',
+        }, Lui).textContent = '拖动';
+      } else {
+        if (state.dirDraft) {
+          S.drawForceArrow(Ldraw, g.p1, state.dirDraft, 60, C.F1, 'F₁', { O: state.clickedO || g.O });
+        }
+        if (state.arm1) drawProperArm(Ldraw, state.arm1, 'l₁', C.arm1);
+        else if (state.armEnd && state.clickedO) {
+          S.el('line', {
+            x1: state.clickedO.x, y1: state.clickedO.y,
+            x2: state.armEnd.x, y2: state.armEnd.y,
+            stroke: C.arm, 'stroke-width': 2.5,
+          }, Ldraw);
+        }
+        if (state.dir2Draft) {
+          S.drawForceArrow(Ldraw, g.p2, state.dir2Draft, 60, C.F2, 'F₂', { O: state.clickedO || g.O });
+        }
+        if (state.arm2) drawProperArm(Ldraw, state.arm2, 'l₂', C.arm2);
+        else if (state.arm2End && state.clickedO) {
+          S.el('line', {
+            x1: state.clickedO.x, y1: state.clickedO.y,
+            x2: state.arm2End.x, y2: state.arm2End.y,
+            stroke: C.arm2, 'stroke-width': 2.5,
+          }, Ldraw);
+        }
       }
-      if (state.arm1) drawProperArm(Ldraw, state.arm1, 'l₁', C.arm1);
-      else if (state.armEnd && state.clickedO) {
-        S.el('line', {
-          x1: state.clickedO.x, y1: state.clickedO.y,
-          x2: state.armEnd.x, y2: state.armEnd.y,
-          stroke: C.arm, 'stroke-width': 2.5,
-        }, Ldraw);
-      }
-      if (state.dir2Draft) {
-        S.drawForceArrow(Ldraw, g.p2, state.dir2Draft, 60, C.F2, 'F₂', { O: state.clickedO || g.O });
-      }
-      if (state.arm2) drawProperArm(Ldraw, state.arm2, 'l₂', C.arm2);
-      else if (state.arm2End && state.clickedO) {
-        S.el('line', {
-          x1: state.clickedO.x, y1: state.clickedO.y,
-          x2: state.arm2End.x, y2: state.arm2End.y,
-          stroke: C.arm2, 'stroke-width': 2.5,
-        }, Ldraw);
-      }
+
       S.el('rect', {
         id: 'lifeHit',
         x: 0, y: 0, width: 800, height: 420,
@@ -499,26 +535,50 @@
       }, Lui);
     }
 
-    // 力矩条
-    const maxM = Math.max(g.f1 * g.a1.armLen, g.f2 * g.a2.armLen, 1);
-    const m1 = g.f1 * g.a1.armLen;
-    const m2 = g.f2 * g.a2.armLen;
-    document.getElementById('lifeM1').style.width = (100 * m1 / maxM) + '%';
-    document.getElementById('lifeM2').style.width = (100 * m2 / maxM) + '%';
-    document.getElementById('lifeM1Lab').textContent = 'F₁·l₁ = ' + m1.toFixed(0);
-    document.getElementById('lifeM2Lab').textContent = 'F₂·l₂ = ' + m2.toFixed(0);
-    document.getElementById('lifeClass').textContent = g.cls.type + '杠杆 — ' + g.cls.tip;
-    if (g.stageName) {
-      document.getElementById('lifeClass').textContent += '（' + g.stageName + '）';
+    if (exploring && em) {
+      const maxArm = Math.max(em.a1.armLen, em.a2.armLen, 1);
+      document.getElementById('lifeM1').style.width = (100 * em.a1.armLen / maxArm) + '%';
+      document.getElementById('lifeM2').style.width = (100 * em.a2.armLen / maxArm) + '%';
+      document.getElementById('lifeM1Lab').textContent = '动力臂 l₁ = ' + em.a1.armLen.toFixed(1);
+      document.getElementById('lifeM2Lab').textContent = '阻力臂 l₂ = ' + em.a2.armLen.toFixed(1);
+
+      const classBox = document.getElementById('lifeClass');
+      if (em.nearZero || state.exploreStatus === 'blocked') {
+        classBox.innerHTML =
+          '<b>动力臂接近 0</b><br>' +
+          '这个方向几乎不能使杠杆绕 O 转动。';
+      } else {
+        const lr = em.a2.armLen > 1e-6 ? em.a1.armLen / em.a2.armLen : Infinity;
+        const fr = isFinite(em.ratio) ? em.ratio.toFixed(2) : '∞';
+        classBox.innerHTML =
+          '<b>当前施力方向：' + em.cls.type + '</b><br>' +
+          'l₁/l₂ = ' + (isFinite(lr) ? lr.toFixed(2) : '∞') +
+          '　·　完成同样任务时 F₁/F₂ ≈ ' + fr;
+        if (g.stageName) classBox.innerHTML += '<br>' + g.stageName;
+      }
+    } else {
+      // 原有力矩条
+      const maxM = Math.max(g.f1 * g.a1.armLen, g.f2 * g.a2.armLen, 1);
+      const m1 = g.f1 * g.a1.armLen;
+      const m2 = g.f2 * g.a2.armLen;
+      document.getElementById('lifeM1').style.width = (100 * m1 / maxM) + '%';
+      document.getElementById('lifeM2').style.width = (100 * m2 / maxM) + '%';
+      document.getElementById('lifeM1Lab').textContent = 'F₁·l₁ = ' + m1.toFixed(0);
+      document.getElementById('lifeM2Lab').textContent = 'F₂·l₂ = ' + m2.toFixed(0);
+      document.getElementById('lifeClass').textContent = g.cls.type + '杠杆 — ' + g.cls.tip;
+      if (g.stageName) {
+        document.getElementById('lifeClass').textContent += '（' + g.stageName + '）';
+      }
     }
 
     const param = document.getElementById('lifeParam');
-    param.hidden = !(step >= 8 || state.practice);
+    // 作图与方向探究阶段固定 O、P₁、P₂，避免同时改变多个变量。
+    param.hidden = !(step >= 8 && !state.practice);
     document.getElementById('lifeParamLabel').textContent = e.paramLabel;
     document.getElementById('lifeParamVal').value = state.t;
     document.getElementById('lifeParamOut').textContent = state.t.toFixed(2);
 
-    document.getElementById('lifePerp').disabled = step < 5 && !state.practice;
+    document.getElementById('lifePerp').disabled = state.practice || step < 5;
   }
 
   function drawProperArm(g, rec, label, color) {
