@@ -129,7 +129,7 @@
       name: '筷子',
       pivotGiven: true,
       action: '分析：夹菜（不分析搅或敲）',
-      whyO: '支点 O 已直接给出：手中两筷相抵、约束转动的位置。',
+      whyO: '支点 O 直接给出在红圈位置：手中两筷相抵、约束转动的位置。',
       view: '侧视',
       paramLabel: '手指捏的位置',
       getGeom(t) {
@@ -192,11 +192,11 @@
       action: '分析：拔钉子',
       whyO: '锤头抵木板处 → 支点 O；硬棒可以弯',
       view: '侧视',
-      paramLabel: '手握柄的位置',
+      paramLabel: '装配固定（与画力臂工作台一致）',
       getGeom(t) {
         const O = K.v(431, 280);
         const nail = K.v(390, 275);
-        const grip = K.v(210 + t * 25, 100 + t * 20);
+        const grip = K.v(210, 100);
         return {
           O, bar: [nail, O, grip],
           p1: grip, d1: K.v(0, -1),
@@ -227,36 +227,52 @@
     {
       id: 'nailclipper',
       name: '指甲剪',
-      action: '分析：先手柄级（省力），再刀口级（费力）',
-      whyO: '两级杠杆：手柄支点与刀口支点不同',
-      view: '侧视',
-      paramLabel: '当前查看的一级',
+      action: '分析：依次看压柄、上刀口、下刀口三个杠杆',
+      whyO: '按结构图分为三个杠杆：压柄以圆柱销为支点；上、下刀口均以尾部连接处为支点。',
+      view: '侧视实物',
+      paramLabel: '当前杠杆（左=压柄，中=上刀口，右=下刀口）',
       stages: true,
       getGeom(t) {
-        // t<0.5 手柄级；t>=0.5 刀口级
-        if (t < 0.5) {
-          const O = K.v(300, 260);
-          const hand = K.v(500, 300);
-          const mid = K.v(340, 240);
+        const P = (u, v) => K.v(150 + u * 500, 2 + v * 500 * (352 / 420));
+
+        if (t < 1 / 3) {
+          const O = P(0.205, 0.70);
+          const hand = P(0.815, 0.09);
+          const load = P(0.135, 0.73);
           return {
-            O, bar: [mid, O, hand],
+            O, bar: [load, O, hand],
             p1: hand, d1: K.v(0, 1),
-            p2: mid, d2: K.v(0, 1),
+            p2: load, d2: K.v(0, 1),
             f2: 20,
             decor: 'clipper1',
-            stageName: '手柄级（省力）',
+            stageName: '① 压柄：第一类杠杆（省力）',
           };
         }
-        const O = K.v(340, 240);
-        const tip = K.v(480, 200);
-        const press = K.v(300, 260);
+
+        if (t < 2 / 3) {
+          const O = P(0.955, 0.64);
+          const input = P(0.245, 0.72);
+          const tip = P(0.045, 0.78);
+          return {
+            O, bar: [tip, input, O],
+            p1: input, d1: K.v(0, 1),
+            p2: tip, d2: K.v(0, -1),
+            f2: 35,
+            decor: 'clipper2',
+            stageName: '② 上刀口：第三类杠杆（费力）',
+          };
+        }
+
+        const O = P(0.955, 0.64);
+        const input = P(0.235, 0.83);
+        const tip = P(0.045, 0.86);
         return {
-          O, bar: [press, O, tip],
-          p1: press, d1: K.v(0, -1),
+          O, bar: [tip, input, O],
+          p1: input, d1: K.v(0, -1),
           p2: tip, d2: K.v(0, 1),
-          f2: 40,
-          decor: 'clipper2',
-          stageName: '刀口级（费力）',
+          f2: 35,
+          decor: 'clipper3',
+          stageName: '③ 下刀口：第三类杠杆（费力）',
         };
       },
     },
@@ -458,7 +474,7 @@
     }
 
     if (!state.practice) {
-      if (step >= 2) S.drawPivot(Ldraw, g.O);
+      if (step >= 2 || e.pivotGiven) S.drawPivot(Ldraw, g.O);
       if (step >= 3) {
         const px1 = 40 + Math.min(100, g.f1 * 0.4);
         const px2 = 40 + Math.min(100, g.f2 * 0.4);
