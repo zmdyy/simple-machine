@@ -359,25 +359,34 @@
     return angularErrorDeg(dir, truth) <= FORCE_TOL_DEG ? K.norm(truth) : null;
   }
 
+  function angleForSector(dir, sc) {
+    let a = forceAngleDeg(dir);
+    if (!sc.sector) return a;
+    const mid = (sc.sector.minDeg + sc.sector.maxDeg) / 2;
+    while (a - mid > 180) a -= 360;
+    while (a - mid < -180) a += 360;
+    return a;
+  }
+
   function inOpenSector(dir, sc) {
     if (!sc.sector) return true;
-    const a = forceAngleDeg(dir);
+    const a = angleForSector(dir, sc);
     return a >= sc.sector.minDeg - FORCE_TOL_DEG &&
       a <= sc.sector.maxDeg + FORCE_TOL_DEG;
   }
 
   function snapOpenBoundary(dir, sc) {
     if (!sc.sector) return K.norm(dir);
-    let a = forceAngleDeg(dir);
+    let a = angleForSector(dir, sc);
     if (Math.abs(a - sc.sector.minDeg) <= FORCE_TOL_DEG) a = sc.sector.minDeg;
     if (Math.abs(a - sc.sector.maxDeg) <= FORCE_TOL_DEG) a = sc.sector.maxDeg;
     const r = a * Math.PI / 180;
     return K.v(Math.cos(r), Math.sin(r));
   }
 
-  function drawAllowedSector(g, sc) {
+  function drawAllowedSector(g, sc, point) {
     if (!sc.sector) return;
-    const p = sc.point;
+    const p = point || sc.point;
     const r = 94;
     const a0 = sc.sector.minDeg * Math.PI / 180;
     const a1 = sc.sector.maxDeg * Math.PI / 180;
@@ -507,7 +516,7 @@
       drawForceAndLine(L.draw, sc, O, pr.f1.dir, 'F₁', p1);
     }
 
-    if (sc.practiceType === 'freeSector' && pr.showSector) drawAllowedSector(L.ui, sc);
+    if (sc.practiceType === 'freeSector' && pr.showSector) drawAllowedSector(L.ui, sc, p1);
     if (pr.correctionForce && sc.practiceType === 'fixed') drawCorrectionForce(L.ui, sc);
 
     if (pr.phase === 'arm1' && pr.f1.armEnd && pr.clickedO) {
