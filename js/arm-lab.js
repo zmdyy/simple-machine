@@ -1,5 +1,8 @@
 /**
- * 画力臂工作台：六档情景题干 + 教师演示 / 学生练习 + 图上线索
+ * 画力臂工作台：
+ * - fixed：方向唯一（重力/压力等），±5° 容错后自动吸附到规范方向；超差才显示纠错答案
+ * - given：题目已给出力，学生只画对应力臂
+ * - freeSector：开放施力方向。只判断物理可操作范围，不设置唯一标准动力；力臂答案随学生选择动态生成
  */
 (function (global) {
   'use strict';
@@ -8,25 +11,26 @@
   const S = global.LeverSVG;
   const C = K.COLORS;
 
+  const FORCE_TOL_DEG = 5;
+  const ARM_TOL_DEG = 7;
+  const ARM_TIP_TOL = 28;
+
   const SCENES = [
     {
       id: 'horiz_vert',
       name: '挂钩码',
-      tip: '两侧挂码；本题练画动力臂',
-      howO: '看图：杠杆架在中间刀口支架上。支点 O = 刀口与杆接触的那一点（杆中央，不是钩码）。',
+      tip: '重力方向明确：允许少量手绘误差',
+      practiceType: 'fixed',
+      howO: '杠杆架在中间刀口支架上。支点 O = 刀口与杆接触的一点。',
       stem:
-        '水平杠杆架在中间刀口上，左侧、右侧都挂钩码，重力都竖直向下。\n' +
-        '左侧看作阻力 F₂，右侧看作动力 F₁。\n' +
-        '本题只要求：点出支点 → 从右侧「动」钩拖出重力方向 → 画出动力臂 l₁。\n' +
-        '（不必判断杠杆往哪边转；要判断转动需比较两侧力矩，见「平衡探究」。）',
-      known: '红=动力及其力臂，蓝=阻力及其力臂。图上已画出两侧钩码；练习时请画红色动力这一侧。',
+        '水平杠杆两侧挂钩码。右侧钩码重力作为动力 F₁。\n' +
+        '请：① 点出支点 O；② 从右侧“动”点向下画 F₁；③ 从 O 画出动力臂 l₁。',
+      known: '重力方向竖直向下。手绘允许 ±5°；在容差内会自动吸附为规范竖直线。',
       O: { x: 400, y: 220 },
       bar: [{ x: 180, y: 220 }, { x: 620, y: 220 }],
-      // 练习对象：右侧动力
       point: { x: 520, y: 220 },
       dir: { x: 0, y: 1 },
       forcePx: 75,
-      // 左侧阻力（演示时画出；练习时只显示钩码轮廓）
       point2: { x: 280, y: 220 },
       dir2: { x: 0, y: 1 },
       forcePx2: 75,
@@ -37,12 +41,13 @@
     {
       id: 'horiz_oblique',
       name: '斜向压杆',
-      tip: '力臂短于杆上距离',
-      howO: '看图：中间有刀口支架。支点 O = 刀口顶住杆的位置（不要点在「动」手或钩码上）。',
+      tip: '已知斜向力：只判断力臂',
+      practiceType: 'given',
+      howO: '中间刀口支架顶住杆的位置就是支点 O。',
       stem:
-        '杆仍水平。右侧挂钩码为阻力（竖直向下）；左侧用手斜向右下压，这是动力。\n' +
-        '请：点出支点（刀口）；从左侧「动」点拖出斜向压力；再画动力臂。',
-      known: '红=动力，蓝=阻力。本题练画红色动力臂。',
+        '杆保持水平，图中已经给出手对杆的斜向下压力 F₁。\n' +
+        '本题不猜施力角度，只练一个核心：从 O 向 F₁ 的作用线作垂线，画出 l₁。',
+      known: '红色箭头和红色虚线是已知条件。只需从 O 画到作用线的垂足。',
       O: { x: 400, y: 220 },
       bar: [{ x: 180, y: 220 }, { x: 620, y: 220 }],
       point: { x: 260, y: 220 },
@@ -58,12 +63,13 @@
     {
       id: 'extend',
       name: '要延长作用线',
-      tip: '垂足常在箭头外',
-      howO: '看图：中间刀口支架托住杆。支点 O = 刀口与杆的接触点。',
+      tip: '垂足可能落在箭头之外',
+      practiceType: 'given',
+      howO: '中间刀口支架与杆的接触点是支点 O。',
       stem:
-        '右侧有竖直向下的阻力；左侧手斜向下推（动力），箭头较短，垂足往往在延长线上。\n' +
-        '请：点刀口；从「动」点拖出力的方向；画力臂时必要时先延长虚线。',
-      known: '红=动力，蓝=阻力。',
+        '图中已经给出较短的斜向动力 F₁。它的垂足不一定落在箭头线段上。\n' +
+        '请沿虚线理解“作用线可以延长”，再从 O 画出 l₁。',
+      known: '力臂针对的是“力的作用线”，不是只针对箭头本身。',
       O: { x: 400, y: 200 },
       bar: [{ x: 200, y: 200 }, { x: 600, y: 200 }],
       point: { x: 280, y: 200 },
@@ -79,12 +85,13 @@
     {
       id: 'tilt_vert',
       name: '杆是斜的',
-      tip: '对照：为何要调水平',
-      howO: '看图：斜杆仍架在刀口上。支点 O = 刀口与杆接触处（杆中间偏下的支架顶）。',
+      tip: '杆斜了，重力仍竖直',
+      practiceType: 'fixed',
+      howO: '斜杆仍架在刀口上；刀口与杆接触处是支点 O。',
       stem:
-        '杠杆还没调成水平，两侧仍挂钩码，重力竖直向下。\n' +
-        '请：支点是刀口；本题练画右侧动力的力臂（竖直向下，不要沿杆拖）。',
-      known: '红=动力，蓝=阻力。本题不要求判断转动方向。',
+        '杠杆没有调成水平，但钩码重力仍然竖直向下。\n' +
+        '请：① 找 O；② 画右侧 F₁；③ 画 l₁。不要沿着斜杆画力臂。',
+      known: '重力方向不随杆倾斜。手绘 ±5° 内自动规范为竖直向下。',
       O: { x: 400, y: 240 },
       bar: [{ x: 200, y: 300 }, { x: 600, y: 180 }],
       point: { x: 520, y: 204 },
@@ -100,44 +107,51 @@
     {
       id: 'bent',
       name: '羊角锤拔钉',
-      tip: '硬棒不必是直的',
-      howO: '看图：锤头抵在木板上。支点 O = 锤头外弧与木板上沿的接触处（不是钉帽，也不是柄端）。',
+      tip: '开放施力：合理方向都可以',
+      practiceType: 'freeSector',
+      sector: { minDeg: -90, maxDeg: 0, label: '水平向右 → 竖直向上' },
+      howO: '锤头外弧抵住木板的位置是支点 O，不是钉帽，也不是柄端。',
       stem:
-        '羊角锤拔钉：锤头抵在木板上（支点），手向上扳木柄（动力），钉子卡在羊角里阻碍拔出（阻力）。\n' +
-        '请：点出支点（锤头与木板接触处）；从柄端「动」点拖出扳的方向；画动力臂。',
-      known: '红=动力，蓝=阻力（钉）。硬棒可以弯——力臂仍是支点到作用线的垂距。',
+        '羊角锤拔钉。手在柄端可以选择不同施力方向，并不存在唯一“标准动力”。\n' +
+        '请：① 点支点 O；② 从柄端自由选择 F₁（水平向右到竖直向上的 90° 范围）；③ 按你自己的 F₁ 画 l₁。',
+      known:
+        '合理方向全部接受。程序不会替你换成某个“标准 F₁”；只会依据你选择的方向生成对应作用线与力臂。',
       O: { x: 431, y: 280 },
       bar: [{ x: 390, y: 275 }, { x: 431, y: 280 }, { x: 210, y: 100 }],
       point: { x: 210, y: 100 },
-      dir: { x: -0.35, y: -1 },
-      forcePx: 72,
+      // 教师演示只需要一个示例方向；练习不以它作为标准答案
+      dir: { x: 0, y: -1 },
+      forcePx: 78,
       point2: { x: 390, y: 275 },
       dir2: { x: 0, y: 1 },
       forcePx2: 55,
       cue: 'hammer',
-      pointLabel: '动',
-      point2Label: '阻',
+      pointLabel: '手',
+      point2Label: '钉',
     },
     {
       id: 'same_side',
       name: '提起鱼',
-      tip: '支点同侧，只画动力臂',
-      howO: '看图：竿尾抵在「腰」上。支点 O = 竿尾与腰的接触处（标了「腰」的那一端，不是鱼、也不是「动」点）。',
+      tip: '真实鱼竿 · 开放施力方向',
+      practiceType: 'freeSector',
+      sector: { minDeg: -90, maxDeg: 0, label: '水平向右 → 竖直向上' },
+      howO: '竿尾抵腰/后手稳定处作为本模型的支点 O；前手位置作为动力作用点。',
       stem:
-        '提起鱼：竿尾抵腰为支点；前手向上抬为动力；鱼在竿尖向下为阻力。两力在支点同侧。\n' +
-        '请：只画动力臂——点竿尾支点；从「动」点向上拖；再画 l₁。',
-      known: '红=动力，蓝=阻力。本题不要求画阻力臂。',
-      O: { x: 220, y: 240 },
-      bar: [{ x: 200, y: 240 }, { x: 620, y: 240 }],
-      point: { x: 360, y: 240 },
+        '提起鱼：鱼线对竿尖的作用向下，前手负责使鱼竿绕 O 转动。\n' +
+        '请：① 点竿尾支点；② 从前手位置自由选择 F₁（水平向右到竖直向上的 90° 范围）；③ 按自己的 F₁ 画 l₁。',
+      known:
+        '方向合理不等于同样省力。接近沿“支点—前手”连线施力时，动力臂会很小；转向垂直时动力臂增大。',
+      O: { x: 212, y: 242 },
+      bar: [{ x: 212, y: 242 }, { x: 675, y: 242 }],
+      point: { x: 360, y: 242 },
       dir: { x: 0, y: -1 },
-      forcePx: 70,
-      point2: { x: 560, y: 240 },
+      forcePx: 78,
+      point2: { x: 675, y: 242 },
       dir2: { x: 0, y: 1 },
       forcePx2: 55,
-      cue: 'fishing',
-      pointLabel: '动',
-      point2Label: '阻',
+      cue: 'fishing_real',
+      pointLabel: '前手',
+      point2Label: '鱼',
     },
   ];
 
@@ -150,18 +164,25 @@
     point: null,
     dir: null,
     dragging: null,
-    practice: {
-      phase: 'pivot',
-      clickedO: null,
-      f1: { dir: null, armEnd: null },
-      f2: { dir: null, armEnd: null },
-      showTruth: false,
-      lastArmCode: null,
-    },
+    practice: null,
   };
 
   function scene() {
     return SCENES[state.sceneIdx];
+  }
+
+  function freshPractice(sc) {
+    const given = sc.practiceType === 'given';
+    return {
+      phase: given ? 'arm1' : 'pivot',
+      clickedO: given ? { ...sc.O } : null,
+      f1: { dir: given ? K.norm(sc.dir) : null, armEnd: null },
+      correctionForce: false,
+      correctionArm: false,
+      showSector: false,
+      lastForceAngle: null,
+      lastArmError: null,
+    };
   }
 
   function syncFromScene() {
@@ -170,14 +191,7 @@
     state.point = { ...sc.point };
     state.dir = K.norm(sc.dir);
     state.step = state.mode === 'demo' ? 5 : 0;
-    state.practice = {
-      phase: 'pivot',
-      clickedO: null,
-      f1: { dir: null, armEnd: null },
-      f2: { dir: null, armEnd: null },
-      showTruth: false,
-      lastArmCode: null,
-    };
+    state.practice = freshPractice(sc);
   }
 
   function svg() {
@@ -194,15 +208,62 @@
     };
   }
 
-  /**
-   * 图上线索：刀口支架 / 钩码 / 手 / 锤木板 / 腰与鱼
-   * 练习阶段也保留装置图（否则无法判断支点）；但不预标字母 O
-   */
+  function addImage(g, href, x, y, w, h, attrs) {
+    const img = S.el('image', Object.assign({
+      x, y, width: w, height: h,
+      preserveAspectRatio: 'none',
+      'pointer-events': 'none',
+    }, attrs || {}), g);
+    img.setAttribute('href', href);
+    img.setAttributeNS('http://www.w3.org/1999/xlink', 'href', href);
+    return img;
+  }
+
+  function drawFishingReal(g, sc) {
+    // rod.png 是生活杠杆模块已经使用的真实鱼竿抠图；这里保持近水平，便于开放方向探究。
+    const x = 190;
+    const y = 194;
+    const w = 510;
+    const h = w * (230 / 1200);
+
+    // 腰部/后手只作为中性情境线索，不用动力红色，避免被误认作力箭头。
+    S.el('path', {
+      d: 'M188,206 C162,214 150,236 154,272 C158,300 178,312 206,307 L223,280 L222,224 Z',
+      fill: '#d6d3d1', stroke: '#78716c', 'stroke-width': 1.5, opacity: 0.9,
+    }, g);
+    S.el('ellipse', {
+      cx: sc.O.x - 2, cy: sc.O.y + 4, rx: 15, ry: 12,
+      fill: '#e7e5e4', stroke: '#78716c', 'stroke-width': 1.4,
+    }, g);
+    addImage(g, 'assets/life/rod.png', x, y, w, h);
+
+    // 前手：只标出握持区域，不暗示施力方向。
+    S.el('ellipse', {
+      cx: sc.point.x, cy: sc.point.y + 1, rx: 19, ry: 11,
+      fill: '#fed7aa', stroke: '#9a3412', 'stroke-width': 1.4, opacity: 0.9,
+    }, g);
+
+    const tip = sc.point2;
+    S.el('line', {
+      x1: tip.x, y1: tip.y + 2, x2: tip.x, y2: 342,
+      stroke: '#64748b', 'stroke-width': 1.5,
+    }, g);
+    addImage(g, 'assets/life/fish.png', tip.x - 43, 330, 86, 38);
+
+    S.el('text', {
+      x: sc.O.x - 40, y: sc.O.y + 44,
+      fill: C.muted, 'font-size': 12, 'font-weight': 700,
+    }, g).textContent = '腰 / 后手稳定';
+    S.el('text', {
+      x: sc.point.x - 4, y: sc.point.y - 24,
+      fill: C.F1, 'font-size': 12, 'font-weight': 700, 'text-anchor': 'middle',
+    }, g).textContent = '前手';
+  }
+
+  /** 图上线索：刀口 / 钩码 / 手 / 羊角锤 / 真实鱼竿 */
   function drawCues(g, sc, O) {
     const cue = sc.cue;
-    // 实验室杠杆才画刀口；钓鱼是「竿尾抵腰」，不用刀口架
-    const labStand = cue === 'hooks_both' || cue === 'hooks_tilt' ||
-      cue === 'hand_and_hook';
+    const labStand = cue === 'hooks_both' || cue === 'hooks_tilt' || cue === 'hand_and_hook';
     if (labStand) S.drawFulcrumStand(g, O);
 
     if (cue === 'hooks_both' || cue === 'hooks_tilt') {
@@ -213,125 +274,309 @@
       if (sc.point2) S.drawHookWeight(g, sc.point2, C.F2);
       const p = sc.point;
       S.el('ellipse', {
-        cx: p.x, cy: p.y - 14, rx: 14, ry: 10,
-        fill: '#fecaca', opacity: 0.95, stroke: C.F1, 'stroke-width': 1.5,
+        cx: p.x, cy: p.y - 14, rx: 15, ry: 10,
+        fill: '#fed7aa', opacity: 0.95, stroke: '#9a3412', 'stroke-width': 1.5,
       }, g);
     }
     if (cue === 'hammer') {
       S.drawClawHammer(g, {
-        O: O,
+        O,
         grip: sc.point,
-        nail: sc.point2 || { x: 508, y: 278 },
+        nail: sc.point2 || { x: 390, y: 275 },
       });
     }
-    if (cue === 'fishing') {
-      const tip = sc.point2 || { x: 560, y: 240 };
-      const waist = sc.O;
-      S.el('text', {
-        x: tip.x - 6, y: tip.y + 28, 'font-size': 22, fill: C.F2,
-      }, g).textContent = '鱼';
-      // 腰：中性肤色，勿用动力红（会当成「动」）
-      S.el('ellipse', {
-        cx: waist.x - 6, cy: waist.y + 6, rx: 16, ry: 14,
-        fill: '#e7e5e4', opacity: 0.95, stroke: '#78716c', 'stroke-width': 1.5,
-      }, g);
-      S.el('text', {
-        x: waist.x - 34, y: waist.y + 30,
-        fill: C.muted, 'font-size': 12, 'font-weight': 600,
-      }, g).textContent = '腰';
-    }
+    if (cue === 'fishing_real') drawFishingReal(g, sc);
   }
 
-  /** 练习找支点：图下短提示（完整说明在右侧任务卡；此处不预标 O） */
+  function drawLabeledPoint(g, p, color) {
+    S.el('circle', {
+      cx: p.x, cy: p.y, r: 6.5,
+      fill: '#fff', stroke: color, 'stroke-width': 2.25,
+    }, g);
+    S.el('circle', { cx: p.x, cy: p.y, r: 2.5, fill: color }, g);
+  }
+
   function drawPivotFindHint(g, sc) {
     const short =
-      sc.cue === 'hammer' ? '请点锤头外弧与木板上沿的接触处（不是钉、不是柄）。' :
-      sc.cue === 'fishing' ? '请点竿尾与「腰」的接触处（不是鱼、不是「动」点）。' :
-      '请点刀口支架顶住杠杆的接触处（杆中央附近，不是钩码）。';
+      sc.cue === 'hammer'
+        ? '请点锤头外弧与木板上沿的接触处。'
+        : sc.cue === 'fishing_real'
+          ? '请点竿尾与腰/后手稳定处的接触位置。'
+          : '请点刀口支架顶住杠杆的接触处。';
     S.el('text', {
       x: 400, y: 388,
       fill: '#9a3412', 'font-size': 13, 'font-weight': 700,
       'text-anchor': 'middle',
       'font-family': 'Noto Sans SC, system-ui, sans-serif',
-    }, g).textContent = '① 怎样找支点：' + short;
+    }, g).textContent = '① 找支点：' + short;
+  }
+
+  function forceAngleDeg(dir) {
+    let d = Math.atan2(dir.y, dir.x) * 180 / Math.PI;
+    while (d <= -180) d += 360;
+    while (d > 180) d -= 360;
+    return d;
+  }
+
+  function angularErrorDeg(a, b) {
+    const na = K.norm(a);
+    const nb = K.norm(b);
+    const dot = Math.max(-1, Math.min(1, K.dot(na, nb)));
+    return Math.acos(dot) * 180 / Math.PI;
+  }
+
+  function snapFixedDirection(dir, truth) {
+    return angularErrorDeg(dir, truth) <= FORCE_TOL_DEG ? K.norm(truth) : null;
+  }
+
+  function inOpenSector(dir, sc) {
+    if (!sc.sector) return true;
+    const a = forceAngleDeg(dir);
+    return a >= sc.sector.minDeg - 1e-6 && a <= sc.sector.maxDeg + 1e-6;
+  }
+
+  function snapOpenBoundary(dir, sc) {
+    if (!sc.sector) return K.norm(dir);
+    let a = forceAngleDeg(dir);
+    if (Math.abs(a - sc.sector.minDeg) <= FORCE_TOL_DEG) a = sc.sector.minDeg;
+    if (Math.abs(a - sc.sector.maxDeg) <= FORCE_TOL_DEG) a = sc.sector.maxDeg;
+    const r = a * Math.PI / 180;
+    return K.v(Math.cos(r), Math.sin(r));
+  }
+
+  function drawAllowedSector(g, sc) {
+    if (!sc.sector) return;
+    const p = sc.point;
+    const r = 94;
+    const a0 = sc.sector.minDeg * Math.PI / 180;
+    const a1 = sc.sector.maxDeg * Math.PI / 180;
+    const x0 = p.x + r * Math.cos(a0);
+    const y0 = p.y + r * Math.sin(a0);
+    const x1 = p.x + r * Math.cos(a1);
+    const y1 = p.y + r * Math.sin(a1);
+    S.el('path', {
+      d: 'M' + p.x + ',' + p.y + ' L' + x0 + ',' + y0 + ' A' + r + ',' + r + ' 0 0 1 ' + x1 + ',' + y1 + ' Z',
+      fill: 'rgba(220,38,38,0.10)', stroke: 'rgba(220,38,38,0.55)',
+      'stroke-width': 1.5, 'stroke-dasharray': '5 4',
+    }, g);
     S.el('text', {
-      x: 400, y: 408,
-      fill: '#a8a29e', 'font-size': 11,
+      x: p.x + 62, y: p.y - 62,
+      fill: '#b91c1c', 'font-size': 11, 'font-weight': 700,
       'text-anchor': 'middle',
-      'font-family': 'Noto Sans SC, system-ui, sans-serif',
-    }, g).textContent = '右侧任务卡有完整说明 · 点对后再拖力的方向';
+    }, g).textContent = '允许施力范围';
   }
 
-  /** 练习画力臂：图上脚手架——力箭头 + 作用线虚线（全情景通用） */
-  function drawPracticeArmScaffold(g, sc, O, which) {
-    const isF2 = which === 'F2';
-    const saved = isF2 ? state.practice.f2 : state.practice.f1;
-    const point = isF2 ? sc.point2 : state.point;
-    const standardDir = K.norm(isF2 ? sc.dir2 : state.dir);
-    const dir = saved.dir || standardDir;
-    const color = isF2 ? C.F2 : C.F1;
-    const active = (!isF2 && state.practice.phase === 'arm1') || (isF2 && state.practice.phase === 'arm2');
-    if (!dir || !point) return;
-    S.drawForceArrow(g, point, dir, (isF2 ? sc.forcePx2 : sc.forcePx) || 70, color, isF2 ? 'F₂' : 'F₁', { O: O });
-    S.drawForceLine(g, point, dir, 260, color);
-    S.el('text', {
-      x: point.x + dir.x * 90 + 14,
-      y: point.y + dir.y * 90,
-      fill: color, 'font-size': 11, 'font-weight': 700,
-      'font-family': 'Noto Sans SC, system-ui, sans-serif',
-    }, g).textContent = '作用线';
+  function drawForceAndLine(g, sc, O, dir, label) {
+    if (!dir) return;
+    S.drawForceArrow(g, sc.point, dir, sc.forcePx || 72, C.F1, label || 'F₁', { O });
+    S.drawForceLine(g, sc.point, dir, 260, C.F1);
+  }
 
-    // 常见错画对照：沿杆连到作用点（仅当垂足不在作用点时显示）
-    const truth = K.forceArm(state.O, point, standardDir);
-    const footNearPoint = K.dist(truth.foot, point) < 28;
-    const showWrongRod =
-      active && !footNearPoint &&
-      (state.practice.lastArmCode === 'along_bar' ||
-        state.practice.lastArmCode === 'to_point');
-    if (showWrongRod) {
+  function drawCorrectionForce(g, sc) {
+    const wrap = S.el('g', { opacity: 0.72 }, g);
+    S.drawForceArrow(wrap, sc.point, sc.dir, sc.forcePx || 72, C.F1, '正确方向', { O: sc.O });
+    S.drawForceLine(wrap, sc.point, sc.dir, 250, C.F1);
+  }
+
+  function drawCorrectionArm(g, sc, O, dir) {
+    const truth = K.forceArm(O, sc.point, dir);
+    const wrap = S.el('g', { opacity: 0.72 }, g);
+    S.drawArm(wrap, O, truth.foot, '正确 l₁', false, C.arm1, dir);
+    if (truth.armLen > 5) S.drawRightAngle(wrap, truth.foot, truth.armVec, truth.dir, 9, C.arm1);
+  }
+
+  function judgeArm(O, point, dir, end) {
+    const truth = K.forceArm(O, point, dir);
+    if (truth.armLen < 4) {
+      return {
+        ok: false,
+        code: 'zero',
+        truth,
+        message: '这个施力方向使动力臂几乎为 0。方向本身可以存在，但此时很难靠它产生转动；可换一个方向再探究。',
+      };
+    }
+    const sv = K.sub(end, O);
+    if (K.len(sv) < 10) {
+      return { ok: false, code: 'short', truth, message: '请从 O 拖到力的作用线上。' };
+    }
+    const dot = Math.max(-1, Math.min(1, K.dot(K.norm(sv), K.norm(truth.armVec))));
+    const ang = Math.acos(dot) * 180 / Math.PI;
+    const tip = K.dist(end, truth.foot);
+    if (ang <= ARM_TOL_DEG && tip <= ARM_TIP_TOL) {
+      return { ok: true, code: 'ok', truth, message: '正确。已自动吸附到规范垂足。' };
+    }
+    if (ang <= ARM_TOL_DEG) {
+      return {
+        ok: false, code: 'tip', truth,
+        message: '垂直方向基本正确，但终点没有落在作用线的垂足附近。已显示对应的正确力臂。',
+      };
+    }
+    return {
+      ok: false, code: 'angle', truth,
+      message: '力臂方向偏差较大。力臂必须是支点 O 到力的作用线的垂直距离。已显示对应答案。',
+    };
+  }
+
+  function renderDemo(L, sc) {
+    if (sc.point2 && state.step >= 2) {
+      S.drawForceArmConstruction(L.ui, L.root, {
+        O: state.O, point: sc.point2, dir: sc.dir2, forcePx: sc.forcePx2,
+        which: 'F2', labelF: 'F₂', labelL: 'l₂', step: Math.min(state.step, 5),
+      });
+    }
+    S.drawForceArmConstruction(L.draw, L.root, {
+      O: state.O, point: state.point, dir: state.dir, forcePx: sc.forcePx,
+      which: 'F1', labelF: 'F₁', labelL: 'l₁', step: state.step,
+      showWrongToPoint: state.showWrong,
+    });
+
+    if (state.step >= 1) drawDemoHandle(L.ui, state.O);
+    if (state.step >= 2) {
+      drawDemoHandle(L.ui, state.point);
+      const tip = K.add(state.point, K.scale(state.dir, sc.forcePx));
+      drawDemoHandle(L.ui, tip);
+    }
+  }
+
+  function renderPractice(L, sc) {
+    const pr = state.practice;
+    const O = pr.clickedO || sc.O;
+
+    // 作用点是题目条件的一部分；开放题不提前给唯一方向。
+    drawLabeledPoint(L.draw, sc.point, C.F1);
+    if (sc.point2) drawLabeledPoint(L.draw, sc.point2, C.F2);
+
+    if (pr.phase === 'pivot' && !pr.clickedO) drawPivotFindHint(L.ui, sc);
+    if (pr.clickedO) S.drawPivot(L.draw, pr.clickedO);
+
+    // 题目给定的阻力，仅作为情境条件；本工作台这一轮只要求动力侧作图。
+    if (sc.point2) {
+      S.drawForceArrow(L.ui, sc.point2, sc.dir2, sc.forcePx2 || 55, C.F2, 'F₂', { O: sc.O });
+    }
+
+    if (sc.practiceType === 'given') {
+      drawForceAndLine(L.draw, sc, O, sc.dir, '已知 F₁');
+    } else if (pr.f1.dir) {
+      drawForceAndLine(L.draw, sc, O, pr.f1.dir, 'F₁');
+    }
+
+    if (sc.practiceType === 'freeSector' && pr.showSector) drawAllowedSector(L.ui, sc);
+    if (pr.correctionForce && sc.practiceType === 'fixed') drawCorrectionForce(L.ui, sc);
+
+    if (pr.phase === 'arm1' && pr.f1.armEnd && pr.clickedO) {
       S.el('line', {
-        x1: O.x, y1: O.y, x2: point.x, y2: point.y,
-        stroke: C.wrong, 'stroke-width': 1.5, 'stroke-dasharray': '4 4',
-      }, g);
-      S.el('text', {
-        x: (O.x + point.x) / 2,
-        y: (O.y + point.y) / 2 - 10,
-        fill: C.wrong, 'font-size': 11, 'font-weight': 700,
-        'text-anchor': 'middle',
-      }, g).textContent = '这不是力臂（杆上距离）';
+        x1: pr.clickedO.x, y1: pr.clickedO.y,
+        x2: pr.f1.armEnd.x, y2: pr.f1.armEnd.y,
+        stroke: C.arm1, 'stroke-width': 2.5, 'stroke-linecap': 'round',
+      }, L.draw);
     }
 
-    if (active) {
-      S.el('text', {
-        x: 400, y: 388,
-        fill: '#9a3412', 'font-size': 13, 'font-weight': 700,
-        'text-anchor': 'middle',
-        'font-family': 'Noto Sans SC, system-ui, sans-serif',
-      }, g).textContent = footNearPoint
-        ? '从 O 向' + (isF2 ? '蓝色' : '红色') + '虚线作垂线；本题垂足在作用点附近'
-        : '从 O 向' + (isF2 ? '蓝色' : '红色') + '虚线作垂线，拖到交点松手';
-      S.el('text', {
-        x: 400, y: 408,
-        fill: '#a8a29e', 'font-size': 11,
-        'text-anchor': 'middle',
-        'font-family': 'Noto Sans SC, system-ui, sans-serif',
-      }, g).textContent = '力臂 = 支点到力的作用线的垂直距离';
+    if (pr.correctionArm && pr.f1.dir && pr.clickedO) {
+      drawCorrectionArm(L.ui, sc, pr.clickedO, pr.f1.dir);
+    }
+
+    if (pr.phase === 'done' && pr.f1.armEnd && pr.clickedO && pr.f1.dir) {
+      // 完成后只保留“学生自己的、已规范化”的作图；不再叠加标准答案。
+      const t = K.forceArm(pr.clickedO, sc.point, pr.f1.dir);
+      S.drawArm(L.draw, pr.clickedO, t.foot, 'l₁', false, C.arm1, pr.f1.dir);
+      if (t.armLen > 5) S.drawRightAngle(L.draw, t.foot, t.armVec, t.dir, 9, C.arm1);
     }
   }
 
-  function drawLabeledPoint(g, p, label, color) {
+  function drawDemoHandle(g, p) {
     S.el('circle', {
-      cx: p.x, cy: p.y, r: 6.5,
-      fill: '#fff', stroke: color, 'stroke-width': 2.25,
-    }, g);
-    S.el('circle', {
-      cx: p.x, cy: p.y, r: 2.5, fill: color,
+      cx: p.x, cy: p.y, r: 11,
+      fill: 'rgba(15,118,110,0.15)', stroke: '#0f766e', 'stroke-width': 2,
+      style: 'cursor:grab',
     }, g);
   }
 
-  function drawActionPoint(g, sc) {
-    if (sc.point2) drawLabeledPoint(g, sc.point2, sc.point2Label || '阻', C.F2);
-    drawLabeledPoint(g, sc.point, sc.pointLabel || '动', C.F1);
+  function practicePhaseLabel() {
+    const sc = scene();
+    const p = state.practice.phase;
+    if (sc.practiceType === 'given') {
+      if (p === 'arm1') return '① 已知 F₁：画动力臂 l₁';
+      return '② 完成';
+    }
+    if (p === 'pivot') return '① 点出支点 O';
+    if (p === 'dir1') return sc.practiceType === 'freeSector' ? '② 自定动力方向 F₁' : '② 画动力 F₁';
+    if (p === 'arm1') return '③ 按当前 F₁ 画动力臂 l₁';
+    return '④ 完成';
+  }
+
+  function updateSide() {
+    const sc = scene();
+    const pr = state.practice;
+    const title = document.getElementById('armTaskTitle');
+    const stepEl = document.getElementById('armTaskStep');
+    const body = document.getElementById('armTaskBody');
+    const known = document.getElementById('armTaskKnown');
+    const read = document.getElementById('armReadout');
+    const readHead = document.getElementById('armReadoutHeading');
+    const stepLab = document.getElementById('armStepLabel');
+
+    if (state.mode === 'demo') {
+      if (title) title.textContent = '教师演示 · 看规范作图';
+      if (stepEl) {
+        const names = ['', '① 标支点 O', '② 画出力 F', '③ 虚线作用线', '④ 垂线与直角', '⑤ 标出力臂 l'];
+        stepEl.textContent = names[state.step] || '⑤ 标出力臂 l';
+      }
+      if (body) body.textContent = sc.stem + '\n\n教师演示中可以拖动支点、作用点或力箭头末端。';
+      if (known) known.textContent = sc.known;
+      if (readHead) {
+        readHead.hidden = false;
+        readHead.textContent = '演示读数';
+      }
+      if (read) {
+        const truth = K.forceArm(state.O, state.point, state.dir);
+        read.hidden = false;
+        read.innerHTML = '动力臂 l₁ ≈ ' + (truth.armLen / 4).toFixed(1) + ' cm（示意）';
+      }
+    } else {
+      if (title) {
+        title.textContent = sc.practiceType === 'given'
+          ? '学生练习 · 已知力，只画力臂'
+          : sc.practiceType === 'freeSector'
+            ? '学生练习 · 自定施力方向'
+            : '学生练习 · 容错作图';
+      }
+      if (stepEl) stepEl.textContent = practicePhaseLabel();
+      if (body) body.textContent = '【怎样找支点】' + sc.howO + '\n\n' + sc.stem;
+      if (known) known.textContent = sc.known;
+
+      if (sc.practiceType === 'freeSector' && pr.f1.dir) {
+        const O = pr.clickedO || sc.O;
+        const arm = K.forceArm(O, sc.point, pr.f1.dir).armLen;
+        const r = K.dist(O, sc.point);
+        const factor = arm < 2 ? Infinity : r / arm;
+        const eff = r > 0 ? Math.min(100, 100 * arm / r) : 0;
+        const a = Math.abs(forceAngleDeg(pr.f1.dir));
+        if (readHead) {
+          readHead.hidden = false;
+          readHead.textContent = '开放探究读数';
+        }
+        if (read) {
+          read.hidden = false;
+          read.innerHTML =
+            '当前施力角：约 ' + a.toFixed(0) + '°（相对地面）<br>' +
+            '当前动力臂：' + (arm / 4).toFixed(1) + ' cm（示意）<br>' +
+            '最大可能动力臂：' + (r / 4).toFixed(1) + ' cm（示意）<br>' +
+            '动力臂利用率：' + eff.toFixed(0) + '%<br>' +
+            (isFinite(factor)
+              ? '<b>同样任务所需动力约为“最省力方向”的 ' + factor.toFixed(2) + ' 倍</b>'
+              : '<b style="color:#b45309">动力臂接近 0：方向允许，但几乎不能产生转动效果</b>');
+        }
+      } else {
+        if (readHead) readHead.hidden = true;
+        if (read) read.hidden = true;
+      }
+    }
+
+    if (stepLab) {
+      stepLab.textContent = state.mode === 'demo'
+        ? ['', '① O', '② F', '③ 作用线', '④ 垂线', '⑤ 力臂'][state.step]
+        : practicePhaseLabel();
+    }
   }
 
   function render() {
@@ -343,225 +588,23 @@
     S.clear(L.ui);
 
     const sc = scene();
-    const truth = K.forceArm(state.O, state.point, state.dir);
-    const rodDist = K.dist(state.O, state.point);
-
-    // 线索：演示用当前 O；练习用场景固定装置（含刀口/腰/木板），但不预标 O
     const cueO = state.mode === 'practice' ? sc.O : state.O;
     drawCues(L.bar, sc, cueO);
-    // 羊角锤用写实外形，不再叠画抽象折线硬棒
-    if (sc.cue !== 'hammer') S.drawBar(L.bar, sc.bar);
 
-    // 「动/阻」放在作用点外侧，不写在钩码/箭杆上
-    if (sc.point2) {
-      S.drawRoleTag(L.bar, sc.point2, sc.point2Label || '阻', C.F2, cueO);
-    }
-    S.drawRoleTag(L.bar, sc.point, sc.pointLabel || '动', C.F1, cueO);
-
-    if (state.mode === 'demo') {
-      // 先画阻力（蓝），再画动力（红），红在上层
-      if (sc.point2 && state.step >= 2) {
-        S.drawForceArmConstruction(L.ui, L.root, {
-          O: state.O,
-          point: sc.point2,
-          dir: sc.dir2,
-          forcePx: sc.forcePx2,
-          which: 'F2',
-          labelF: 'F₂',
-          labelL: 'l₂',
-          step: Math.min(state.step, 5),
-          showWrongToPoint: false,
-        });
-      }
-      S.drawForceArmConstruction(L.draw, L.root, {
-        O: state.O,
-        point: state.point,
-        dir: state.dir,
-        forcePx: sc.forcePx,
-        which: 'F1',
-        labelF: 'F₁',
-        labelL: 'l₁',
-        step: state.step,
-        showWrongToPoint: state.showWrong,
-      });
-
-      if (state.step >= 1) drawHandle(L.ui, state.O, 'O');
-      if (state.step >= 2) {
-        drawHandle(L.ui, state.point, 'P');
-        const tip = K.add(state.point, K.scale(state.dir, sc.forcePx));
-        drawHandle(L.ui, tip, 'D');
-      }
-    } else {
-      // 练习：装置线索 + 作用点；力臂阶段画出作用线虚线脚手架
-      drawActionPoint(L.draw, sc);
-
-      if (state.practice.phase === 'pivot' && !state.practice.clickedO) {
-        drawPivotFindHint(L.ui, sc);
-      }
-
-      if (state.practice.clickedO) {
-        S.drawPivot(L.draw, state.practice.clickedO);
-      }
-
-      const pr = state.practice;
-      const f1Reached = ['arm1', 'dir2', 'arm2', 'done'].includes(pr.phase);
-      const f2Reached = ['arm2', 'done'].includes(pr.phase);
-      if (f1Reached) {
-        drawPracticeArmScaffold(L.draw, sc, pr.clickedO || state.O, 'F1');
-      } else if (pr.f1.dir) {
-        S.drawForceArrow(
-          L.draw, state.point, pr.f1.dir, 70, C.F1, 'F₁？',
-          { O: pr.clickedO || state.O }
-        );
-      }
-
-      if (pr.f1.armEnd && pr.clickedO) {
-        S.drawArm(
-          L.draw, pr.clickedO, pr.f1.armEnd,
-          'l₁', false, C.arm1, state.dir
-        );
-      }
-
-      if (sc.point2 && pr.phase === 'dir2' && pr.f2.dir) {
-        S.drawForceArrow(L.draw, sc.point2, pr.f2.dir, sc.forcePx2 || 70, C.F2, 'F₂？', { O: pr.clickedO || state.O });
-      }
-      if (sc.point2 && f2Reached) {
-        drawPracticeArmScaffold(L.draw, sc, pr.clickedO || state.O, 'F2');
-      }
-      if (pr.f2.armEnd && pr.clickedO) {
-        S.drawArm(L.draw, pr.clickedO, pr.f2.armEnd, 'l₂', false, C.arm2, sc.dir2);
-      }
-
-      if (state.practice.showTruth) {
-        if (sc.point2) {
-          S.drawForceArmConstruction(L.ui, L.root, {
-            O: state.O,
-            point: sc.point2,
-            dir: sc.dir2,
-            forcePx: sc.forcePx2,
-            which: 'F2',
-            labelF: 'F₂',
-            labelL: 'l₂',
-            step: 5,
-          });
-        }
-        S.drawForceArmConstruction(L.ui, L.root, {
-          O: state.O,
-          point: state.point,
-          dir: state.dir,
-          forcePx: sc.forcePx,
-          which: 'F1',
-          labelF: 'F₁',
-          labelL: 'l₁',
-          step: 5,
-        });
-      }
+    if (sc.cue !== 'hammer' && sc.cue !== 'fishing_real') {
+      S.drawBar(L.bar, sc.bar);
     }
 
-    updateSide(truth, rodDist);
-  }
-
-  function drawHandle(g, p) {
-    S.el('circle', {
-      cx: p.x, cy: p.y, r: 11,
-      fill: 'rgba(15,118,110,0.15)',
-      stroke: '#0f766e',
-      'stroke-width': 2,
-      style: 'cursor:grab',
-    }, g);
-  }
-
-  function practicePhaseLabel() {
-    const p = state.practice.phase;
-    if (p === 'pivot') return '① 点出支点 O';
-    if (p === 'dir1') return '② 画动力 F₁';
-    if (p === 'arm1') return '③ 画动力臂 l₁';
-    if (p === 'dir2') return '④ 画阻力 F₂';
-    if (p === 'arm2') return '⑤ 画阻力臂 l₂';
-    return '⑥ 完成：所有作图已保留';
-  }
-
-  function updateSide(truth, rodDist) {
-    const sc = scene();
-    const card = document.getElementById('armTaskCard');
-    const title = document.getElementById('armTaskTitle');
-    const stepEl = document.getElementById('armTaskStep');
-    const body = document.getElementById('armTaskBody');
-    const known = document.getElementById('armTaskKnown');
-    const read = document.getElementById('armReadout');
-    const readHead = document.getElementById('armReadoutHeading');
-    const stepLab = document.getElementById('armStepLabel');
-
-    if (card) card.classList.toggle('practice-mode', state.mode === 'practice');
-
-    if (state.mode === 'demo') {
-      if (title) title.textContent = '教师演示 · 看规范作图';
-      if (stepEl) {
-        const names = ['', '① 标支点 O', '② 画出力 F', '③ 虚线作用线', '④ 垂线与直角', '⑤ 标出力臂 l'];
-        stepEl.textContent = names[state.step] || '⑤ 标出力臂 l';
-      }
-      if (body) {
-        body.textContent =
-          sc.stem +
-          '\n\n操作：拖动支点、作用点或力箭头末端；或用「下一步 / 一键画完」。';
-      }
-      if (known) {
-        known.textContent =
-          '颜色约定：动力 F₁ 与力臂 l₁ 用红色，阻力 F₂ 与力臂 l₂ 用蓝色。' +
-          '力臂两端是朝外箭头；力是作用点出发的单箭头。' +
-          '本台练「画力臂」，不据此判断杠杆往哪边转。';
-      }
-      if (readHead) readHead.hidden = false;
-      if (read) {
-        read.hidden = false;
-        const cm = (truth.armLen / 4).toFixed(1);
-        const rod = (rodDist / 4).toFixed(1);
-        read.innerHTML =
-          `<span class="arm">力臂 l₁ ≈ ${cm} cm</span>（示意）<br>` +
-          `杆上距离 ≈ ${rod} cm<br>` +
-          (Math.abs(truth.armLen - rodDist) > 8
-            ? `<b style="color:#b91c1c">力臂 ≠ 杆上距离</b>`
-            : `<span style="color:#059669">此时力臂 ≈ 杆上水平距离</span>`);
-      }
-    } else {
-      if (title) title.textContent = '学生练习 · 请你画';
-      if (stepEl) stepEl.textContent = practicePhaseLabel();
-      if (body) {
-        const how = sc.howO ? ('【怎样找支点】' + sc.howO + '\n\n') : '';
-        body.textContent = how + sc.stem;
-      }
-      if (known) {
-        known.textContent =
-          (state.practice.phase === 'pivot'
-            ? '先根据图上的装置（刀口 / 木板 / 腰）判断支点，点在接触处；点对后再拖力的方向。\n'
-            : state.practice.phase === 'arm1' || state.practice.phase === 'arm2'
-              ? '画力臂通则：① 虚线是力的作用线；② 从 O 向虚线作垂线；③ 交点是垂足。\n'
-              : '') + sc.known;
-      }
-      // 练习中不泄题；判对后显示对照读数
-      const showRead = !!state.practice.showTruth;
-      if (readHead) readHead.hidden = !showRead;
-      if (read) {
-        read.hidden = !showRead;
-        if (showRead) {
-          const cm = (truth.armLen / 4).toFixed(1);
-          const rod = (rodDist / 4).toFixed(1);
-          read.innerHTML =
-            `<span class="arm">标准力臂 l₁ ≈ ${cm} cm</span><br>` +
-            `杆上距离 ≈ ${rod} cm<br>` +
-            (Math.abs(truth.armLen - rodDist) > 8
-              ? `<b style="color:#b91c1c">力臂 ≠ 杆上距离</b>`
-              : `<span style="color:#059669">此时力臂 ≈ 杆上水平距离</span>`);
-        }
-      }
+    // 角色标签是语境，不是答案。真实鱼竿有自己的标注，避免重复。
+    if (sc.cue !== 'fishing_real') {
+      if (sc.point2) S.drawRoleTag(L.bar, sc.point2, sc.point2Label || '阻', C.F2, cueO);
+      S.drawRoleTag(L.bar, sc.point, sc.pointLabel || '动', C.F1, cueO);
     }
 
-    if (stepLab) {
-      stepLab.textContent =
-        state.mode === 'demo'
-          ? ['', '① O', '② F', '③ 作用线', '④ 垂线', '⑤ 力臂'][state.step]
-          : practicePhaseLabel();
-    }
+    if (state.mode === 'demo') renderDemo(L, sc);
+    else renderPractice(L, sc);
+
+    updateSide();
   }
 
   function setJudge(msg, ok) {
@@ -581,7 +624,7 @@
     return K.v(p.x, p.y);
   }
 
-  function hitHandle(p) {
+  function hitDemoHandle(p) {
     const sc = scene();
     const tip = K.add(state.point, K.scale(state.dir, sc.forcePx));
     if (K.dist(p, state.O) < 16) return 'O';
@@ -592,55 +635,60 @@
 
   function onDown(evt) {
     const p = svgPoint(evt);
+    const sc = scene();
+
     if (state.mode === 'demo') {
-      const h = hitHandle(p);
+      const h = hitDemoHandle(p);
       if (h) {
         state.dragging = h === 'D' ? 'dir' : h === 'P' ? 'point' : 'O';
         evt.preventDefault();
       }
       return;
     }
+
     const pr = state.practice;
-    const sc = scene();
+    pr.correctionForce = false;
+    pr.correctionArm = false;
+
     if (pr.phase === 'pivot') {
       pr.clickedO = p;
-      const d = K.dist(p, state.O);
-      if (d < 32) {
-        setJudge('支点正确。下一步：从「' + (sc.pointLabel || '作用点') + '」拖出力的方向。', true);
+      const d = K.dist(p, sc.O);
+      if (d <= 32) {
+        // 点对后吸附到真正的支点，避免后续因为鼠标误差把力臂几何整体带偏。
+        pr.clickedO = { ...sc.O };
         pr.phase = 'dir1';
+        setJudge(
+          sc.practiceType === 'freeSector'
+            ? '支点正确。现在从动力作用点自由选择一个合理施力方向。'
+            : '支点正确。现在从动力作用点拖出力的方向。',
+          true
+        );
       } else {
-        setJudge(
-          '支点不太对。读题：约束转动、几乎不移的那个点（刀口 / 锤头抵木板处 / 竿尾）。',
-          false
-        );
+        setJudge('支点偏差较大。请根据装置约束位置重新判断。', false);
       }
       render();
       return;
     }
-    if (pr.phase === 'dir1' || pr.phase === 'dir2') {
-      const isF2 = pr.phase === 'dir2';
-      const point = isF2 ? sc.point2 : state.point;
-      // 必须从作用点附近开始拖
-      if (!point || K.dist(p, point) > 40) {
-        setJudge('请按住' + (isF2 ? '蓝色阻力点' : '红色动力点') + '，再拖出力的方向。', false);
+
+    if (pr.phase === 'dir1') {
+      if (K.dist(p, sc.point) > 42) {
+        setJudge('请从红色动力作用点按下，再拖出力的方向。', false);
         return;
       }
-      state.dragging = isF2 ? 'practiceDir2' : 'practiceDir1';
-      (isF2 ? pr.f2 : pr.f1).dir = K.norm(K.sub(p, point));
+      state.dragging = 'practiceDir1';
+      pr.f1.dir = K.norm(K.sub(p, sc.point));
+      if (sc.practiceType === 'freeSector') pr.showSector = false;
       render();
       return;
     }
-    if ((pr.phase === 'arm1' || pr.phase === 'arm2') && pr.clickedO) {
-      if (K.dist(p, pr.clickedO) > 36) {
-        setJudge(
-          '力臂要从支点 O 按下再拖到垂足：先按住你点出的 O，松手前拖到力的作用线（虚线方向）上。',
-          false
-        );
+
+    if (pr.phase === 'arm1' && pr.clickedO && pr.f1.dir) {
+      if (K.dist(p, pr.clickedO) > 38) {
+        setJudge('力臂应从支点 O 开始。请按住 O，再拖到力的作用线。', false);
         return;
       }
-      const isF2 = pr.phase === 'arm2';
-      state.dragging = isF2 ? 'practiceArm2' : 'practiceArm1';
-      (isF2 ? pr.f2 : pr.f1).armEnd = p;
+      state.dragging = 'practiceArm1';
+      pr.f1.armEnd = p;
       render();
     }
   }
@@ -648,67 +696,86 @@
   function onMove(evt) {
     if (!state.dragging) return;
     const p = svgPoint(evt);
+    const sc = scene();
+
     if (state.dragging === 'O') state.O = p;
     else if (state.dragging === 'point') state.point = p;
     else if (state.dragging === 'dir') state.dir = K.norm(K.sub(p, state.point));
     else if (state.dragging === 'practiceDir1') {
-      state.practice.f1.dir = K.norm(K.sub(p, state.point));
-    } else if (state.dragging === 'practiceDir2') {
-      state.practice.f2.dir = K.norm(K.sub(p, scene().point2));
+      state.practice.f1.dir = K.norm(K.sub(p, sc.point));
     } else if (state.dragging === 'practiceArm1') {
       state.practice.f1.armEnd = p;
-    } else if (state.dragging === 'practiceArm2') {
-      state.practice.f2.armEnd = p;
     }
     render();
   }
 
   function onUp() {
-    if (state.dragging === 'practiceDir1' || state.dragging === 'practiceDir2') {
-      const isF2 = state.dragging === 'practiceDir2';
-      const saved = isF2 ? state.practice.f2 : state.practice.f1;
-      const truthDir = K.norm(isF2 ? scene().dir2 : state.dir);
-      if (!saved.dir) return;
-      const ang = Math.acos(
-        Math.min(1, Math.abs(K.dot(saved.dir, truthDir)))
-      );
-      if ((ang * 180) / Math.PI < 25) {
-        saved.armEnd = null;
-        state.practice.lastArmCode = null;
-        setJudge((isF2 ? '阻力' : '动力') + '方向正确。请从 O 向作用线作垂线。', true);
-        state.practice.phase = isF2 ? 'arm2' : 'arm1';
-      } else {
-        setJudge('方向偏差较大。再读题：力实际往哪边推 / 拉 / 压？', false);
+    if (!state.dragging) return;
+    const sc = scene();
+    const pr = state.practice;
+
+    if (state.dragging === 'practiceDir1' && pr.f1.dir) {
+      if (K.len(pr.f1.dir) < 0.5) {
+        setJudge('请从作用点明显拖出一个方向后再松手。', false);
+        state.dragging = null;
+        render();
+        return;
       }
-      render();
-    }
-    if ((state.dragging === 'practiceArm1' || state.dragging === 'practiceArm2') && state.practice.clickedO) {
-      const isF2 = state.dragging === 'practiceArm2';
-      const saved = isF2 ? state.practice.f2 : state.practice.f1;
-      const point = isF2 ? scene().point2 : state.point;
-      const dir = K.norm(isF2 ? scene().dir2 : state.dir);
-      if (!saved.armEnd) return;
-      const result = K.judgeArmDraw(
-        state.O, point, dir, saved.armEnd
-      );
-      const result2 = K.judgeArmDraw(
-        state.practice.clickedO, point, dir, saved.armEnd
-      );
-      const use = result.ok || result2.ok ? (result.ok ? result : result2) : result2;
-      state.practice.lastArmCode = use.code || null;
-      setJudge(use.message, use.ok);
-      if (use.ok) {
-        state.practice.phase = isF2 ? 'done' : (scene().point2 ? 'dir2' : 'done');
-        if (!isF2 && scene().point2) {
-          setJudge('动力臂正确并已保留。继续从蓝色阻力点拖出 F₂。', true);
+      if (sc.practiceType === 'fixed') {
+        const err = angularErrorDeg(pr.f1.dir, sc.dir);
+        const snapped = snapFixedDirection(pr.f1.dir, sc.dir);
+        pr.lastForceAngle = err;
+        if (snapped) {
+          pr.f1.dir = snapped;
+          pr.phase = 'arm1';
+          pr.correctionForce = false;
+          setJudge('方向正确（误差 ' + err.toFixed(1) + '°）。已自动吸附为规范方向；继续画 l₁。', true);
         } else {
-          state.practice.showTruth = true;
-          setJudge('完成！支点、动力、阻力和两个力臂均已保留。', true);
+          pr.correctionForce = true;
+          setJudge('方向偏差 ' + err.toFixed(1) + '°，超过 ±' + FORCE_TOL_DEG + '° 容差。已显示正确方向，请重画。', false);
         }
-        state.practice.lastArmCode = null;
+      } else if (sc.practiceType === 'freeSector') {
+        if (inOpenSector(pr.f1.dir, sc)) {
+          pr.f1.dir = snapOpenBoundary(pr.f1.dir, sc);
+          pr.phase = 'arm1';
+          pr.showSector = false;
+          const arm = K.forceArm(pr.clickedO || sc.O, sc.point, pr.f1.dir).armLen;
+          if (arm < 4) {
+            pr.phase = 'done';
+            pr.f1.armEnd = { ...(pr.clickedO || sc.O) };
+            setJudge('这个方向在允许范围内，所以不判错；此时力的作用线几乎通过 O，动力臂 l₁≈0。无需再画长度线，可重置后换方向比较。', true);
+          } else {
+            setJudge('这个施力方向物理上合理。程序保留你的选择，不替换成“标准 F₁”；请按它画 l₁。', true);
+          }
+        } else {
+          pr.showSector = true;
+          setJudge('这个方向超出本情境可操作范围。开放题没有唯一标准箭头；图中只提示允许的 90° 施力区域，请重新选择。', false);
+        }
       }
       render();
     }
+
+    if (state.dragging === 'practiceArm1' && pr.f1.armEnd && pr.clickedO && pr.f1.dir) {
+      const r = judgeArm(pr.clickedO, sc.point, pr.f1.dir, pr.f1.armEnd);
+      if (r.ok) {
+        // 自动吸附到精确垂足。最终看到的是自己的作图意图被规范化，而不是再叠一份标准答案。
+        pr.f1.armEnd = { ...r.truth.foot };
+        pr.phase = 'done';
+        pr.correctionArm = false;
+        setJudge(
+          sc.practiceType === 'freeSector'
+            ? '正确。力臂已按你自己选择的 F₁ 自动规范化。可重置后换一个施力方向，比较省力程度。'
+            : '正确。已按你的作图意图自动吸附到规范垂足，不再额外叠加标准答案。',
+          true
+        );
+      } else {
+        pr.lastArmError = r.code;
+        pr.correctionArm = true;
+        setJudge(r.message, false);
+      }
+      render();
+    }
+
     state.dragging = null;
   }
 
@@ -719,8 +786,9 @@
     window.addEventListener('pointerup', onUp);
 
     document.getElementById('armSceneChips').innerHTML = SCENES.map((sc, i) => {
-      return `<button type="button" class="chip${i === 0 ? ' active' : ''}" data-i="${i}">${i + 1}. ${sc.name}</button>`;
+      return '<button type="button" class="chip' + (i === 0 ? ' active' : '') + '" data-i="' + i + '">' + (i + 1) + '. ' + sc.name + '</button>';
     }).join('');
+
     document.getElementById('armSceneChips').addEventListener('click', (e) => {
       const b = e.target.closest('[data-i]');
       if (!b) return;
@@ -730,8 +798,8 @@
       syncFromScene();
       setJudge(
         state.mode === 'practice'
-          ? '已换题。请先读右侧任务卡，再点支点。'
-          : '已换情景。可拖图或用「下一步」分步作图。',
+          ? '已换题。请先读右侧任务卡；不同题型的作答步骤会自动变化。'
+          : '已换情景。教师演示仍可逐步显示规范作图。',
         null
       );
       render();
@@ -739,18 +807,26 @@
 
     document.getElementById('armModeDemo').onclick = () => {
       state.mode = 'demo';
-      state.step = 5;
       syncFromScene();
       state.step = 5;
-      setJudge('教师演示：拖支点 / 作用点 / 力箭头，或逐步作图。', null);
+      setJudge('教师演示：逐步观察支点、力、作用线和力臂。', null);
       document.getElementById('armModeDemo').classList.add('active-toggle');
       document.getElementById('armModePractice').classList.remove('active-toggle');
       render();
     };
+
     document.getElementById('armModePractice').onclick = () => {
       state.mode = 'practice';
       syncFromScene();
-      setJudge('请先读右侧橙色任务卡里的情景，再按①②③作答。', null);
+      const sc = scene();
+      setJudge(
+        sc.practiceType === 'given'
+          ? '本题的力已经给出。请直接从 O 画对应的动力臂。'
+          : sc.practiceType === 'freeSector'
+            ? '这是开放施力题：先找 O，再自己选择合理的 F₁，程序不会用唯一标准方向替换你的判断。'
+            : '请按题意作图。方向误差在 ±' + FORCE_TOL_DEG + '° 内会自动吸附为规范方向。',
+        null
+      );
       document.getElementById('armModePractice').classList.add('active-toggle');
       document.getElementById('armModeDemo').classList.remove('active-toggle');
       render();
@@ -778,7 +854,12 @@
     };
     document.getElementById('armResetPractice').onclick = () => {
       syncFromScene();
-      setJudge(state.mode === 'practice' ? '已重置。请重新读题、点支点。' : '已重置。', null);
+      setJudge(
+        state.mode === 'practice'
+          ? '已重置当前题。你的上一轮方向和力臂已清除，可以重新探究。'
+          : '已重置。',
+        null
+      );
       render();
     };
   }
