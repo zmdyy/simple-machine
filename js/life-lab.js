@@ -64,20 +64,42 @@
       id: 'opener',
       name: '开瓶器',
       key: true,
+      pivotTol: 46,
       action: '分析：用开瓶器抬柄启盖',
       whyO: '鼻端压在瓶盖上的接触点几乎不移 → 支点 O；下唇钩住盖沿，手在柄端施力',
       view: '侧视实物',
       paramLabel: '手在柄端的施力位置',
       getGeom(t) {
-        const O = K.v(280, 200);
-        const hand = K.v(280 + 80 + t * 180, 200);
-        const cap = K.v(320, 200);
+        const O = K.v(238, 78);
+        const hand = K.v(400 + t * 190, 180 + t * 135);
+        const cap = K.v(234, 154);
         return {
           O, bar: [K.v(260, 210), O, hand],
           p1: hand, d1: K.v(0, -1),
           p2: cap, d2: K.v(0, -1),
           f2: 50,
           decor: 'opener',
+        };
+      },
+    },
+    {
+      id: 'wheelbarrow',
+      name: '小推车（独轮车）',
+      key: true,
+      action: '分析：抬起小推车把手',
+      whyO: '轮轴是转动中心 → 支点 O；手在把手处向上抬；货物重力作用在车斗中的重心位置',
+      view: '侧视实物',
+      paramLabel: '货物在车斗中的前后位置',
+      getGeom(t) {
+        const O = K.v(280, 300);
+        const handle = K.v(560, 220);
+        const load = K.v(280 + 40 + t * 120, 280);
+        return {
+          O, bar: [O, handle],
+          p1: handle, d1: K.v(0, -1),
+          p2: load, d2: K.v(0, 1),
+          f2: 300,
+          decor: 'wheelbarrow',
         };
       },
     },
@@ -180,27 +202,6 @@
           p2: nail, d2: K.v(0, -1),
           f2: 100,
           decor: 'hammer',
-        };
-      },
-    },
-    {
-      id: 'wheelbarrow',
-      name: '小推车（独轮车）',
-      key: true,
-      action: '分析：抬起小推车把手',
-      whyO: '轮轴是转动中心 → 支点 O；手在把手处向上抬；货物重力作用在车斗中的重心位置',
-      view: '侧视实物',
-      paramLabel: '货物在车斗中的前后位置',
-      getGeom(t) {
-        const O = K.v(280, 300);
-        const handle = K.v(560, 220);
-        const load = K.v(280 + 40 + t * 120, 280);
-        return {
-          O, bar: [O, handle],
-          p1: handle, d1: K.v(0, -1),
-          p2: load, d2: K.v(0, 1),
-          f2: 300,
-          decor: 'wheelbarrow',
         };
       },
     },
@@ -349,6 +350,19 @@
     };
   }
 
+  function exploreForcePx(m) {
+    // 同一阻力矩下 F₁/F₂ = l₂/l₁。箭头长度随所需动力单调变化；
+    // 为避免接近零力臂时箭头冲出画面，使用平方根压缩并设置显示上限。
+    if (!m || m.nearZero || !isFinite(m.ratio)) return 165;
+    const r = Math.max(0.18, Math.min(4, m.ratio));
+    return Math.max(52, Math.min(165, 84 * Math.sqrt(r)));
+  }
+
+  function exploreHandlePx(m) {
+    // 拖动小球至少离作用点 120 px；较大的力箭头时再向外留 28 px。
+    return Math.max(120, exploreForcePx(m) + 28);
+  }
+
   function boundaryDirection(g, candidate) {
     const O = state.clickedO || g.O;
     const toO = K.norm(K.sub(O, g.p1));
@@ -476,7 +490,10 @@
 
       if (exploring && em) {
         // F1 方向可拖；作用线与 l1 按当前方向实时重算。
-        S.drawForceArrow(Ldraw, g.p1, em.d1, 72, C.F1, 'F₁', { O: em.O });
+        // 同样任务下 l1 越小，所需 F1 越大，红色力箭头也随之增长。
+        const forcePx = exploreForcePx(em);
+        const handlePx = exploreHandlePx(em);
+        S.drawForceArrow(Ldraw, g.p1, em.d1, forcePx, C.F1, 'F₁', { O: em.O });
         S.drawForceLine(Ldraw, g.p1, em.d1, 190, C.F1);
         if (!em.nearZero && em.a1.armLen > 4) {
           S.drawArm(Ldraw, em.O, em.a1.foot, 'l₁', false, C.arm1, em.d1);
@@ -491,14 +508,23 @@
           S.drawRightAngle(Ldraw, em.a2.foot, em.a2.armVec, em.a2.dir, 9, C.arm2);
         }
 
-        const tip = K.add(g.p1, K.scale(em.d1, 72));
+        const arrowTip = K.add(g.p1, K.scale(em.d1, forcePx));
+        const dragTip = K.add(g.p1, K.scale(em.d1, handlePx));
+        if (handlePx - forcePx > 8) {
+          S.el('line', {
+            x1: arrowTip.x, y1: arrowTip.y,
+            x2: dragTip.x, y2: dragTip.y,
+            stroke: C.F1, 'stroke-width': 1.5,
+            'stroke-dasharray': '5 5', opacity: 0.45,
+          }, Lui);
+        }
         S.el('circle', {
-          cx: tip.x, cy: tip.y, r: 11,
+          cx: dragTip.x, cy: dragTip.y, r: 11,
           fill: '#fff', stroke: C.F1, 'stroke-width': 3,
           style: 'cursor:grab',
         }, Lui);
         S.el('text', {
-          x: tip.x + 14, y: tip.y - 10,
+          x: dragTip.x + 14, y: dragTip.y - 10,
           fill: C.F1, 'font-size': 11, 'font-weight': 700,
           stroke: '#fff', 'stroke-width': 3, 'paint-order': 'stroke',
         }, Lui).textContent = '拖动';
@@ -707,7 +733,7 @@
       state.practice = true;
       state.step = 9;
       clearAttempt();
-      setJudge('已清空。请直接在图上点支点（垫块棱）。', null);
+      setJudge('开始练习：请先在实物图上判断并点出支点 O。', null);
       render();
     }
 
@@ -740,7 +766,8 @@
       const g = geom();
       if (state.practicePhase === 'pivot') {
         state.clickedO = p;
-        if (K.dist(p, g.O) < 32) {
+        const pivotTol = ex().pivotTol || 32;
+        if (K.dist(p, g.O) < pivotTol) {
           setJudge('支点正确。下一步：从红色动力作用点拖出 F₁ 的方向。', true);
           state.practicePhase = 'dir';
         } else if (K.dist(p, g.p1) < 24 || K.dist(p, g.p2) < 24) {
@@ -786,7 +813,8 @@
       }
       if (state.practicePhase === 'explore') {
         const dir = state.dirDraft || g.d1;
-        const tip = K.add(g.p1, K.scale(K.norm(dir), 72));
+        const mNow = exploreMetrics(g, dir);
+        const tip = K.add(g.p1, K.scale(K.norm(dir), exploreHandlePx(mNow)));
         if (K.dist(p, tip) > 34) {
           setJudge('方向探究：请拖动红色 F₁ 箭头末端。支点、两个作用点和阻力保持不变。', null);
           return;
@@ -906,7 +934,7 @@
               state.dirDraft = boundaryDirection(g, state.exploreLastValidDir);
               state.exploreStatus = 'blocked';
             }
-            setJudge('作图完成。进入“施力方向探究”：拖动红色 F₁ 箭头末端，观察动力臂 l₁ 和省力/费力程度实时变化。', true);
+            setJudge('作图完成。进入“施力方向探究”：拖动红色控制小球。l₁ 变小时，同样任务所需 F₁ 增大，红色力箭头会随之增长。', true);
           } else {
             state.practicePhase = 'done';
             setJudge('作图完成。天平两侧作用力方向由重力决定，本例不进行施力方向探究。', true);
