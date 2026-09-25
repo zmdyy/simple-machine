@@ -41,10 +41,10 @@
       id: 'broom',
       name: '扫把',
       key: true,
-      action: '分析：向前扫地（不是拎起扫帚）',
-      whyO: '上手相对稳定、约束杆转动 → 支点 O；下手推拉为动力',
-      view: '侧视',
-      paramLabel: '下手位置（越靠扫帚头相对越省力）',
+      action: '分析：向前扫地（用实物图拆解）',
+      whyO: '上手相对稳定、约束扫把转动 → 支点 O；下手是动力作用点；扫把头与地面接触处受阻力',
+      view: '侧视实物',
+      paramLabel: '下手位置（改变动力臂）',
       getGeom(t) {
         const O = K.v(220, 120);
         const head = K.v(520, 340);
@@ -87,18 +87,19 @@
     {
       id: 'opener',
       name: '开瓶器',
-      action: '分析：抬柄启盖',
-      whyO: '开瓶器抵在瓶盖顶上的一点几乎不移 → 支点 O；钩住盖沿，手柄向上抬',
-      view: '侧视',
-      paramLabel: '手抬的位置',
+      key: true,
+      action: '分析：用开瓶器抬柄启盖',
+      whyO: '鼻端压在瓶盖上的接触点几乎不移 → 支点 O；下唇钩住盖沿，手在柄端施力',
+      view: '侧视实物',
+      paramLabel: '手在柄端的施力位置',
       getGeom(t) {
         const O = K.v(280, 200);
         const hand = K.v(280 + 80 + t * 180, 200);
         const cap = K.v(320, 200);
         return {
           O, bar: [K.v(260, 210), O, hand],
-          p1: hand, d1: K.v(0, 1),
-          p2: cap, d2: K.v(0, -1),
+          p1: hand, d1: K.v(0, -1),
+          p2: cap, d2: K.v(0, 1),
           f2: 50,
           decor: 'opener',
         };
@@ -206,11 +207,12 @@
     },
     {
       id: 'wheelbarrow',
-      name: '独轮车',
-      action: '分析：抬车把',
-      whyO: '轮轴着地 → 支点 O',
-      view: '侧视',
-      paramLabel: '货物前后位置',
+      name: '小推车（独轮车）',
+      key: true,
+      action: '分析：抬起小推车把手',
+      whyO: '轮轴是转动中心 → 支点 O；手在把手处向上抬；货物重力作用在车斗中的重心位置',
+      view: '侧视实物',
+      paramLabel: '货物在车斗中的前后位置',
       getGeom(t) {
         const O = K.v(280, 300);
         const handle = K.v(560, 220);
@@ -413,9 +415,13 @@
         }
       }
       if (state.tPrev != null && step >= 8) {
-        const gOld = ex().getGeom(state.tPrev);
-        const aOld = K.forceArm(gOld.O, gOld.p1, gOld.d1);
-        S.drawArm(Lui, gOld.O, aOld.foot, null, true);
+        const gOld = global.LifeScenes
+          ? LifeScenes.layout(ex().id, state.tPrev)
+          : ex().getGeom(state.tPrev);
+        if (gOld) {
+          const aOld = K.forceArm(gOld.O, gOld.p1, gOld.d1);
+          S.drawArm(Lui, gOld.O, aOld.foot, null, true);
+        }
       }
     } else {
       S.el('circle', { cx: g.p1.x, cy: g.p1.y, r: 5, fill: C.F1 }, Ldraw);
@@ -519,7 +525,15 @@
       state.tPrev = null;
       state.showTruth = false;
       renderList();
-      setJudge('', null);
+      if (ex().id === 'broom') {
+        setJudge('先只看扫把实物图。下一步先标上手支点 O，再揭示下手动力点和扫把头阻力点。', null);
+      } else if (ex().id === 'opener') {
+        setJudge('先只看真实开瓶器。重点观察：支点不是瓶子中心，而是开瓶器鼻端压住瓶盖的接触点。', null);
+      } else if (ex().id === 'wheelbarrow') {
+        setJudge('先只看真实小推车。下一步先标轮轴支点，再揭示把手动力点和货物阻力点。', null);
+      } else {
+        setJudge('', null);
+      }
       render();
     };
 
