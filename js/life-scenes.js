@@ -267,19 +267,19 @@
       });
     },
     nailclipper(t) {
-      // 用户提供的透明实物图实际为 720×720。
-      // 统一映射到 400×400 的教学区域，避免之前按错误宽高比把图片拉伸/挤出画布。
-      const x = 190;
+      // 重新抠取后的透明 PNG：600×517。
+      // 按真实宽高比映射到教学区域，避免实物变形或落出画布。
+      const x = 170;
       const y = 10;
-      const w = 400;
-      const h = 400;
+      const w = 460;
+      const h = w * (517 / 600);
       const P = (u, v) => K.v(x + u * w, y + v * h);
 
       if (t < 1 / 3) {
         // 图3第一幅力学图：压柄。O1 在圆柱销，A 端手压，C 点是负载。
-        const O = P(0.208, 0.681);
-        const p1 = P(0.833, 0.153);
-        const p2 = P(0.118, 0.674);
+        const O = P(0.208, 0.705);
+        const p1 = P(0.833, 0.092);
+        const p2 = P(0.118, 0.697);
         return pack(O, p1, K.v(0, 1), p2, K.v(0, 1), [p2, O, p1], 20, {
           stageName: '① 压柄：第一类杠杆（省力）',
           caption: '指甲剪①压柄：圆柱销是支点 O，手在柄端向下压；短臂端把力传给剪体。',
@@ -288,9 +288,9 @@
 
       if (t < 2 / 3) {
         // 图3第二幅力学图：上刀片/上弹片，以尾部连接 O2 为支点。
-        const O = P(0.920, 0.620);
-        const p1 = P(0.240, 0.700);
-        const p2 = P(0.050, 0.735);
+        const O = P(0.920, 0.635);
+        const p1 = P(0.240, 0.727);
+        const p2 = P(0.050, 0.768);
         return pack(O, p1, K.v(0, 1), p2, K.v(0, -1), [p2, p1, O], 35, {
           stageName: '② 上刀口：第三类杠杆（费力）',
           caption: '指甲剪②上刀口：尾部连接处是支点 O，传递力作用在中间，刀口在最前端。',
@@ -298,17 +298,15 @@
       }
 
       // 图3第三幅力学图：下刀片/下弹片，同样以尾部连接 O2 为支点。
-      const O = P(0.920, 0.620);
-      const p1 = P(0.240, 0.790);
-      const p2 = P(0.050, 0.820);
+      const O = P(0.920, 0.635);
+      const p1 = P(0.240, 0.832);
+      const p2 = P(0.050, 0.867);
       return pack(O, p1, K.v(0, -1), p2, K.v(0, 1), [p2, p1, O], 35, {
         stageName: '③ 下刀口：第三类杠杆（费力）',
         caption: '指甲剪③下刀口：尾部连接处是支点 O，中间受力，前端刀口对指甲作用。',
       });
     },
   };
-
-  function draw(g, id, t, opts) {  };
 
   function draw(g, id, t, opts) {
     const step = (opts && opts.step) || 1;
@@ -439,22 +437,22 @@
       const P = (u, v) => K.v(140 + u * 520, 40 + v * 520 * (590 / 974));
       axis(g, [P(0.16, 0.28), P(0.5, 0.22), P(0.84, 0.28)], showAxis);
     } else if (id === 'nailclipper') {
-      const w = 400;
-      const bar = fit(g, 'assets/life/clipper-cutout.webp?v=20260925m', 720, 720, 190, 10, w);
+      const w = 460;
+      const bar = fit(g, 'assets/life/clipper-cutout.png?v=20260925n', 600, 517, 170, 10, w);
 
       let O, p1, p2;
       if (t < 1 / 3) {
-        O = bar.p(0.208, 0.681);
-        p1 = bar.p(0.833, 0.153);
-        p2 = bar.p(0.118, 0.674);
+        O = bar.p(0.208, 0.705);
+        p1 = bar.p(0.833, 0.092);
+        p2 = bar.p(0.118, 0.697);
       } else if (t < 2 / 3) {
-        O = bar.p(0.920, 0.620);
-        p1 = bar.p(0.240, 0.700);
-        p2 = bar.p(0.050, 0.735);
+        O = bar.p(0.920, 0.635);
+        p1 = bar.p(0.240, 0.727);
+        p2 = bar.p(0.050, 0.768);
       } else {
-        O = bar.p(0.920, 0.620);
-        p1 = bar.p(0.240, 0.790);
-        p2 = bar.p(0.050, 0.820);
+        O = bar.p(0.920, 0.635);
+        p1 = bar.p(0.240, 0.832);
+        p2 = bar.p(0.050, 0.867);
       }
 
       if (step >= 2) tag(g, O, '支点 O', -10, -14);
