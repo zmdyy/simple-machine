@@ -148,11 +148,12 @@
       const w = h * (452 / 1101);
       const y = 36;
       const P = (u, v) => K.v(x + u * w, y + v * h);
-      const O = P(0.36, 0.04);
-      const head = P(0.38, 0.97);
-      const p1 = P(0.36, 0.22 + t * 0.32);
+      const O = P(0.36, 0.04);                 // 上手：支点
+      const head = P(0.38, 0.97);              // 扫把头：阻力作用点
+      const p1 = P(0.36, 0.22 + t * 0.32);     // 下手：动力作用点
       return pack(O, p1, K.v(1, 0.08), head, K.v(-1, 0), [O, head], 30, {
-        caption: '向前扫地：上手当轴，下手推杆，扫帚头受地面阻力',
+        fixedKeyPoints: true,
+        caption: '扫把：上手作支点 O，下手是动力作用点，扫把头与地面接触处是阻力作用点。',
       });
     },
     door(t) {
@@ -176,13 +177,14 @@
       const w = 720;
       const h = w * (natH / natW);
       const P = (u, v) => K.v(x + u * w, y + v * h);
-      const O = P(0.255, 0.1);
-      const p2 = P(0.25, 0.23);
+      const O = P(0.255, 0.1);                 // 鼻端压住瓶盖：支点
+      const p2 = P(0.25, 0.23);                // 下唇钩住盖沿：阻力点
       const u1 = 0.5 + t * 0.32;
       const v1 = 0.3 + (u1 - 0.55) * 0.95;
-      const p1 = P(u1, v1);
+      const p1 = P(u1, v1);                    // 手柄：动力点
       return pack(O, p1, K.v(0, -1), p2, K.v(0, 1), [p2, O, p1], 40, {
-        caption: '鼻端抵在瓶盖顶上是支点，下唇钩住盖沿，手柄向上抬。',
+        fixedKeyPoints: true,
+        caption: '开瓶器：鼻端压在瓶盖上作支点 O，下唇钩住盖沿，手在柄端向上抬。',
       });
     },
     rod(t) {
@@ -250,11 +252,12 @@
       const w = 660;
       const h = w * (407 / 1066);
       const P = (u, v) => K.v(x + u * w, y + v * h);
-      const O = P(0.14, 0.62);
-      const handle = P(0.9, 0.1);
-      const load = P(0.28 + t * 0.22, 0.28);
+      const O = P(0.14, 0.62);                 // 轮轴：支点
+      const handle = P(0.9, 0.1);              // 把手：动力点
+      const load = P(0.28 + t * 0.22, 0.28);   // 货物重心：阻力点
       return pack(O, handle, K.v(0, -1), load, K.v(0, 1), [O, handle], 300, {
-        caption: '抬车把：轮轴是支点，手上抬把手，货物在车斗里向下压',
+        fixedKeyPoints: true,
+        caption: '小推车：轮轴是支点 O，手在把手处向上抬，货物重力作用在车斗中的重心位置。',
       });
     },
     balance() {
@@ -342,8 +345,11 @@
       const head = bar.p(0.38, 0.97);
       const p1 = bar.p(0.36, 0.22 + t * 0.32);
       ground(g, head.y + 6);
-      tag(g, O, '上手·轴', 28, 0);
-      tag(g, head, '扫帚头', 24, 0);
+      if (step >= 2) tag(g, O, '上手 · 支点 O', 28, 0);
+      if (step >= 3) {
+        tag(g, p1, '下手 · 动力点', 28, -8);
+        tag(g, head, '扫把头 · 阻力点', 24, 0);
+      }
       axis(g, [O, head], showAxis);
     } else if (id === 'door') {
       const w = 640;
@@ -361,9 +367,15 @@
       const bar = fit(g, 'assets/life/opener-lift.png', natW, natH, x, y, w);
       const u1 = 0.5 + t * 0.32;
       const v1 = 0.3 + (u1 - 0.55) * 0.95;
-      tag(g, bar.p(0.255, 0.1), '瓶盖上·支点', 12, -4);
-      tag(g, bar.p(0.25, 0.23), '钩住盖沿', 12, 18);
-      axis(g, [bar.p(0.25, 0.23), bar.p(0.255, 0.1), bar.p(u1, v1)], showAxis);
+      const O = bar.p(0.255, 0.1);
+      const p2 = bar.p(0.25, 0.23);
+      const p1 = bar.p(u1, v1);
+      if (step >= 2) tag(g, O, '支点 O', 12, -4);
+      if (step >= 3) {
+        tag(g, p2, '盖沿 · 阻力点', 12, 18);
+        tag(g, p1, '手柄 · 动力点', 12, -12);
+      }
+      axis(g, [p2, O, p1], showAxis);
     } else if (id === 'rod') {
       const a = rodAsm(t);
       const rodG = S().el('g', {
@@ -407,10 +419,15 @@
     } else if (id === 'wheelbarrow') {
       const w = 660;
       const bar = fit(g, 'assets/life/wheel.png', 1066, 407, 70, 70, w);
+      const O = bar.p(0.14, 0.62);
       const handle = bar.p(0.9, 0.1);
-      tag(g, bar.p(0.14, 0.62), '轮轴', 10, 18);
-      tag(g, bar.p(0.28 + t * 0.22, 0.28), '货物', 8, -8);
-      axis(g, [bar.p(0.14, 0.62), handle], showAxis);
+      const load = bar.p(0.28 + t * 0.22, 0.28);
+      if (step >= 2) tag(g, O, '轮轴 · 支点 O', 10, 18);
+      if (step >= 3) {
+        tag(g, handle, '把手 · 动力点', -6, -14);
+        tag(g, load, '货物重心 · 阻力点', 8, -8);
+      }
+      axis(g, [O, handle], showAxis);
     } else if (id === 'balance') {
       fit(g, 'assets/life/scale.png', 974, 590, 140, 40, 520);
       const P = (u, v) => K.v(140 + u * 520, 40 + v * 520 * (590 / 974));
