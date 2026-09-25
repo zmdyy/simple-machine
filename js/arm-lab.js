@@ -136,24 +136,18 @@
       practiceType: 'freeSector',
       pivotGiven: true,
       sector: { minDeg: -180, maxDeg: -90, label: '水平向人方向 → 竖直向上' },
-      howO: '支点 O 直接给出：后手握住鱼竿末尾的黄色手柄区域，并把这一处作为本模型的支点。',
+      howO: '支点 O 已直接标在鱼竿末端黄色握把的后手位置；动力作用点也已直接标在前手握持位置。',
       stem:
-        '提起鱼：鱼线对竿尖的作用向下。后手稳定竿尾，前手在前方黄色握把区域施力，使鱼竿向人的方向靠近并抬起。\n' +
-        '本题支点已经给出。请：① 在前方黄色握把区域任选一个前手作用点并拖出 F₁；② 施力方向可在“水平朝向人”到“竖直向上”的 90° 范围内自由选择；③ 按自己的 F₁ 画 l₁。',
+        '提起鱼：后手稳定竿尾，前手使鱼竿向人的方向靠近并抬起；鱼线在竿尖处给鱼竿一个向下的阻力。\n' +
+        '本题支点 O、动力作用点和阻力作用点都已给出。请：① 从前手动力点拖出 F₁；② 施力方向可在“水平朝向人”到“竖直向上”的 90° 范围内自由选择；③ 按自己的 F₁ 画 l₁。',
       known:
         '开放题没有唯一动力方向。越接近沿“支点—前手”连线朝人拉，动力臂越小；越接近与该连线垂直，动力臂越大、越省力。',
-      O: { x: 235, y: 242 },
-      bar: [{ x: 200, y: 242 }, { x: 675, y: 242 }],
-      point: { x: 487, y: 242 },
-      pointRange: {
-        a: { x: 448, y: 242 },
-        b: { x: 522, y: 242 },
-        tol: 30,
-        label: '前手可握区域'
-      },
+      O: { x: 330, y: 242 },
+      bar: [{ x: 200, y: 242 }, { x: 700, y: 242 }],
+      point: { x: 430, y: 242 },
       dir: { x: 0, y: -1 },
       forcePx: 78,
-      point2: { x: 675, y: 242 },
+      point2: { x: 700, y: 242 },
       dir2: { x: 0, y: 1 },
       forcePx2: 55,
       cue: 'fishing_real',
@@ -232,62 +226,47 @@
   }
 
   function drawFishingReal(g, sc) {
-    // rod.png 是生活杠杆模块已经使用的真实鱼竿抠图；这里保持近水平，便于开放方向探究。
+    // 真实鱼竿抠图。这里只保留鱼竿、鱼线和鱼，不再增加人体轮廓或握持范围框。
     const x = 190;
     const y = 194;
     const w = 510;
     const h = w * (230 / 1200);
-
-    // 腰部/后手只作为中性情境线索，不用动力红色，避免被误认作力箭头。
-    S.el('path', {
-      d: 'M188,206 C162,214 150,236 154,272 C158,300 178,312 206,307 L223,280 L222,224 Z',
-      fill: '#d6d3d1', stroke: '#78716c', 'stroke-width': 1.5, opacity: 0.9,
-    }, g);
-    S.el('ellipse', {
-      cx: sc.O.x - 2, cy: sc.O.y + 4, rx: 15, ry: 12,
-      fill: '#e7e5e4', stroke: '#78716c', 'stroke-width': 1.4,
-    }, g);
     addImage(g, 'assets/life/rod.png', x, y, w, h);
 
-    // 后手/支点：直接给出，不再让学生猜。
+    // 支点直接给出：后手握住竿尾黄色握把的位置。
+    S.drawPivot(g, sc.O);
     S.el('text', {
-      x: sc.O.x - 2, y: sc.O.y - 28,
+      x: sc.O.x, y: sc.O.y - 28,
       fill: '#0f766e', 'font-size': 12, 'font-weight': 800,
       'text-anchor': 'middle',
+      stroke: 'rgba(255,255,255,0.95)', 'stroke-width': 3, 'paint-order': 'stroke',
     }, g).textContent = '后手 / 支点 O';
 
-    // 前手可以在前方黄色握把的一段范围内选择作用点。
-    if (sc.pointRange) {
-      const x0 = Math.min(sc.pointRange.a.x, sc.pointRange.b.x);
-      const x1 = Math.max(sc.pointRange.a.x, sc.pointRange.b.x);
-      S.el('rect', {
-        x: x0 - 6, y: sc.point.y - 17,
-        width: (x1 - x0) + 12, height: 34, rx: 12,
-        fill: 'rgba(245,158,11,0.10)', stroke: '#d97706',
-        'stroke-width': 1.5, 'stroke-dasharray': '6 4',
-      }, g);
-      S.el('text', {
-        x: (x0 + x1) / 2, y: sc.point.y - 24,
-        fill: '#9a3412', 'font-size': 11, 'font-weight': 800,
-        'text-anchor': 'middle',
-      }, g).textContent = '前手可握区域';
-    }
+    // 动力作用点直接给出：前手握持位置。
+    drawLabeledPoint(g, sc.point, C.F1);
+    S.el('text', {
+      x: sc.point.x, y: sc.point.y - 25,
+      fill: C.F1, 'font-size': 12, 'font-weight': 800,
+      'text-anchor': 'middle',
+      stroke: 'rgba(255,255,255,0.95)', 'stroke-width': 3, 'paint-order': 'stroke',
+    }, g).textContent = '前手 / 动力点';
 
-    const tip = sc.point2;
+    // 阻力作用点就是鱼线与鱼竿连接的竿尖末端。
+    drawLabeledPoint(g, sc.point2, C.F2);
+    S.el('text', {
+      x: sc.point2.x - 6, y: sc.point2.y - 22,
+      fill: C.F2, 'font-size': 12, 'font-weight': 800,
+      'text-anchor': 'end',
+      stroke: 'rgba(255,255,255,0.95)', 'stroke-width': 3, 'paint-order': 'stroke',
+    }, g).textContent = '竿尖 / 阻力点';
+
+    // 鱼线从竿尖垂下，鱼线对鱼竿的作用点仍在竿尖。
     S.el('line', {
-      x1: tip.x, y1: tip.y + 2, x2: tip.x, y2: 342,
+      x1: sc.point2.x, y1: sc.point2.y + 3,
+      x2: sc.point2.x, y2: 342,
       stroke: '#64748b', 'stroke-width': 1.5,
     }, g);
-    addImage(g, 'assets/life/fish.png', tip.x - 43, 330, 86, 38);
-
-    S.el('text', {
-      x: sc.O.x - 40, y: sc.O.y + 44,
-      fill: C.muted, 'font-size': 12, 'font-weight': 700,
-    }, g).textContent = '腰 / 后手稳定';
-    S.el('text', {
-      x: sc.point.x - 4, y: sc.point.y - 24,
-      fill: C.F1, 'font-size': 12, 'font-weight': 700, 'text-anchor': 'middle',
-    }, g).textContent = '前手';
+    addImage(g, 'assets/life/fish.png', sc.point2.x - 43, 330, 86, 38);
   }
 
   /** 图上线索：刀口 / 钩码 / 手 / 羊角锤 / 真实鱼竿 */
@@ -556,7 +535,7 @@
     }
     if (p === 'pivot') return '① 点出支点 O';
     if (sc.pivotGiven) {
-      if (p === 'dir1') return '① 在前方黄色握把选点并画 F₁';
+      if (p === 'dir1') return '① 从前手动力点画 F₁';
       if (p === 'arm1') return '② 按当前 F₁ 画动力臂 l₁';
       return '③ 完成';
     }
@@ -746,7 +725,9 @@
         pr.f1.point = nearest;
         fp = nearest;
       } else if (K.dist(p, sc.point) > 42) {
-        setJudge('请从红色动力作用点按下，再拖出力的方向。', false);
+        setJudge(sc.cue === 'fishing_real'
+          ? '请从已经标出的“前手 / 动力点”按下，再向人的方向或向上拖出 F₁。'
+          : '请从红色动力作用点按下，再拖出力的方向。', false);
         return;
       }
       state.dragging = 'practiceDir1';
@@ -900,7 +881,7 @@
           ? '本题的力已经给出。请直接从 O 画对应的动力臂。'
           : sc.practiceType === 'freeSector'
             ? (sc.pivotGiven
-              ? '支点 O 已直接给出。请在前方黄色握把区域选择前手位置，再把 F₁ 朝人的方向到竖直向上的 90° 范围内拖出。'
+              ? '支点 O 和前手动力作用点都已直接给出。请从前手动力点把 F₁ 朝人的方向到竖直向上的 90° 范围内拖出。'
               : '这是开放施力题：先找 O，再自己选择合理的 F₁，程序不会用唯一标准方向替换你的判断。')
             : '请按题意作图。方向误差在 ±' + FORCE_TOL_DEG + '° 内会自动吸附为规范方向。',
         null
