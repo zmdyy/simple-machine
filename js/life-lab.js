@@ -891,8 +891,11 @@
           ? '阻力臂已标成 l₂：两端朝外箭头，并与 F₂ 垂直。'
           : r2.message, r2.ok);
         if (r2.ok) {
-          const truth2 = K.forceArm(state.clickedO, g.p2, dir2);
-          state.arm2 = { O: state.clickedO, foot: truth2.foot, dir: dir2, point: g.p2 };
+          // 阻力方向在通过判定后规范化到该情境的真实方向，作为后续方向探究的固定参照。
+          const fixedDir2 = K.norm(g.d2);
+          state.dir2Draft = fixedDir2;
+          const truth2 = K.forceArm(state.clickedO, g.p2, fixedDir2);
+          state.arm2 = { O: state.clickedO, foot: truth2.foot, dir: fixedDir2, point: g.p2 };
           state.arm2End = null;
           if (exploreEnabled(ex())) {
             state.practicePhase = 'explore';
