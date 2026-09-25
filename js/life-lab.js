@@ -70,13 +70,13 @@
       view: '侧视实物',
       paramLabel: '手在柄端的施力位置',
       getGeom(t) {
-        const O = K.v(238, 78);
+        const O = K.v(213, 92);
         const hand = K.v(400 + t * 190, 180 + t * 135);
-        const cap = K.v(234, 154);
+        const cap = K.v(220, 137);
         return {
           O, bar: [K.v(260, 210), O, hand],
           p1: hand, d1: K.v(0, -1),
-          p2: cap, d2: K.v(0, -1),
+          p2: cap, d2: K.v(0, 1),
           f2: 50,
           decor: 'opener',
         };
@@ -91,9 +91,9 @@
       view: '侧视实物',
       paramLabel: '货物在车斗中的前后位置',
       getGeom(t) {
-        const O = K.v(280, 300);
-        const handle = K.v(560, 220);
-        const load = K.v(280 + 40 + t * 120, 280);
+        const O = K.v(143, 241);
+        const handle = K.v(664, 95);
+        const load = K.v(255 + t * 145, 141);
         return {
           O, bar: [O, handle],
           p1: handle, d1: K.v(0, -1),
