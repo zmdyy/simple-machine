@@ -173,12 +173,12 @@
       const w = 720;
       const h = w * (natH / natW);
       const P = (u, v) => K.v(x + u * w, y + v * h);
-      const O = P(0.275, 0.13);                // 鼻端与瓶盖上沿的实际支承接触区
-      const p2 = P(0.270, 0.31);                // 下唇钩住盖沿：阻力作用点
+      const O = P(0.240, 0.163);               // 鼻端压住瓶盖上沿的真实支点（按红圈校准）
+      const p2 = P(0.250, 0.270);               // 下唇钩住盖沿的阻力点（按红箭头校准）
       const u1 = 0.5 + t * 0.32;
       const v1 = 0.3 + (u1 - 0.55) * 0.95;
       const p1 = P(u1, v1);                    // 手柄：动力点
-      return pack(O, p1, K.v(0, -1), p2, K.v(0, -1), [p2, O, p1], 40, {
+      return pack(O, p1, K.v(0, -1), p2, K.v(0, 1), [p2, O, p1], 40, {
         fixedKeyPoints: true,
         caption: '开瓶器：鼻端压在瓶盖上作支点 O，下唇钩住盖沿，手在柄端向上抬。',
       });
@@ -248,7 +248,7 @@
       const w = 660;
       const h = w * (407 / 1066);
       const P = (u, v) => K.v(x + u * w, y + v * h);
-      const O = P(0.14, 0.62);                 // 轮轴：支点
+      const O = P(0.110, 0.680);               // 前轮轴心：支点（按红圈校准）
       const handle = P(0.9, 0.1);              // 把手：动力点
       const load = P(0.28 + t * 0.22, 0.28);   // 货物重心：阻力点
       return pack(O, handle, K.v(0, -1), load, K.v(0, 1), [O, handle], 300, {
@@ -356,8 +356,8 @@
       const bar = fit(g, 'assets/life/opener-lift.png', natW, natH, x, y, w);
       const u1 = 0.5 + t * 0.32;
       const v1 = 0.3 + (u1 - 0.55) * 0.95;
-      const O = bar.p(0.275, 0.13);
-      const p2 = bar.p(0.270, 0.31);
+      const O = bar.p(0.240, 0.163);
+      const p2 = bar.p(0.250, 0.270);
       const p1 = bar.p(u1, v1);
       if (step >= 2) tag(g, O, '支点 O', 12, -4);
       if (step >= 3) {
@@ -408,7 +408,7 @@
     } else if (id === 'wheelbarrow') {
       const w = 660;
       const bar = fit(g, 'assets/life/wheel.png', 1066, 407, 70, 70, w);
-      const O = bar.p(0.14, 0.62);
+      const O = bar.p(0.110, 0.680);
       const handle = bar.p(0.9, 0.1);
       const load = bar.p(0.28 + t * 0.22, 0.28);
       if (step >= 2) tag(g, O, '轮轴 · 支点 O', 10, 18);
