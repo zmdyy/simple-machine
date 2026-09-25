@@ -276,6 +276,8 @@
     arm1: null,
     arm2: null,
     showTruth: false,
+    exploreLastValidDir: null,
+    exploreStatus: null,
   };
 
   function ex() {
@@ -316,6 +318,66 @@
 
   function svg() {
     return document.getElementById('lifeSvg');
+  }
+
+  function exploreEnabled(example) {
+    return !!example && example.id !== 'balance';
+  }
+
+  function resistanceDir(g) {
+    return state.arm2 && state.arm2.dir
+      ? K.norm(state.arm2.dir)
+      : state.dir2Draft
+        ? K.norm(state.dir2Draft)
+        : K.norm(g.d2);
+  }
+
+  function exploreMetrics(g, dir) {
+    const O = state.clickedO || g.O;
+    const d1 = K.norm(dir || state.dirDraft || g.d1);
+    const d2 = resistanceDir(g);
+    const a1 = K.forceArm(O, g.p1, d1);
+    const a2 = K.forceArm(O, g.p2, d2);
+    const t1 = K.torque2D(O, g.p1, d1);
+    const t2 = K.torque2D(O, g.p2, d2);
+    const nearZero = a1.armLen < 4 || Math.abs(t1) < 1e-5;
+    const opposite = Math.abs(t2) < 1e-6 ? true : t1 * t2 < 0;
+    const ratio = a1.armLen < 4 ? Infinity : a2.armLen / a1.armLen;
+    return {
+      O, d1, d2, a1, a2, t1, t2, nearZero, opposite, ratio,
+      cls: K.classifyLever(a1.armLen, a2.armLen),
+    };
+  }
+
+  function boundaryDirection(g, candidate) {
+    const O = state.clickedO || g.O;
+    const toO = K.norm(K.sub(O, g.p1));
+    const away = K.scale(toO, -1);
+    return K.dot(candidate, toO) >= K.dot(candidate, away) ? toO : away;
+  }
+
+  function setExploreDirection(g, candidate) {
+    const d = K.norm(candidate);
+    const m = exploreMetrics(g, d);
+    if (m.nearZero) {
+      state.dirDraft = d;
+      state.exploreLastValidDir = d;
+      state.exploreStatus = 'zero';
+      return m;
+    }
+    if (m.opposite) {
+      state.dirDraft = d;
+      state.exploreLastValidDir = d;
+      state.exploreStatus = 'valid';
+      return m;
+    }
+
+    // 不允许进入与阻力同向转动的半平面；钳制在“作用线经过 O”的边界。
+    const boundary = boundaryDirection(g, d);
+    state.dirDraft = boundary;
+    state.exploreLastValidDir = boundary;
+    state.exploreStatus = 'blocked';
+    return exploreMetrics(g, boundary);
   }
 
   function renderList() {
@@ -476,6 +538,8 @@
     state.arm1 = null;
     state.arm2 = null;
     state.showTruth = false;
+    state.exploreLastValidDir = null;
+    state.exploreStatus = null;
   }
 
   function setJudge(msg, ok) {
@@ -595,6 +659,8 @@
       state.dirDraft = null;
       state.armEnd = null;
       state.showTruth = false;
+      state.exploreLastValidDir = null;
+      state.exploreStatus = null;
       state.tPrev = null;
       setJudge('已回到实物。要再练，把「下一步」点到「你来画」。', null);
       render();
@@ -615,7 +681,7 @@
       if (state.practicePhase === 'pivot') {
         state.clickedO = p;
         if (K.dist(p, g.O) < 32) {
-          setJudge('支点正确。下一步：从蓝色动力作用点拖出力的方向。', true);
+          setJudge('支点正确。下一步：从红色动力作用点拖出 F₁ 的方向。', true);
           state.practicePhase = 'dir';
         } else if (K.dist(p, g.p1) < 24 || K.dist(p, g.p2) < 24) {
           setJudge('作用点在杠杆上，但这里要先点支点 O。', false);
@@ -658,8 +724,24 @@
         render();
         return;
       }
+      if (state.practicePhase === 'explore') {
+        const dir = state.dirDraft || g.d1;
+        const tip = K.add(g.p1, K.scale(K.norm(dir), 72));
+        if (K.dist(p, tip) > 34) {
+          setJudge('方向探究：请拖动红色 F₁ 箭头末端。支点、两个作用点和阻力保持不变。', null);
+          return;
+        }
+        dragging = 'exploreDir';
+        state.exploreLastValidDir = K.norm(dir);
+        return;
+      }
       if (state.practicePhase === 'done') {
-        setJudge('动力臂和阻力臂都已保留。要重画，点「退出你来画」。', true);
+        setJudge(
+          ex().id === 'balance'
+            ? '天平两侧作用力方向由重力决定，本例不进行施力方向探究。要重画请点「退出你来画」。'
+            : '动力臂和阻力臂都已保留。要重画，点「退出你来画」。',
+          true
+        );
       }
     });
     window.addEventListener('pointermove', (evt) => {
@@ -678,6 +760,17 @@
         render();
       } else if (dragging === 'arm2') {
         state.arm2End = p;
+        render();
+      } else if (dragging === 'exploreDir') {
+        const dv = K.sub(p, g.p1);
+        if (K.len(dv) > 8) {
+          const m = setExploreDirection(g, dv);
+          if (m.nearZero || state.exploreStatus === 'blocked') {
+            setJudge('动力臂接近 0，这个方向几乎不能使杠杆绕 O 转动。', null);
+          } else {
+            setJudge('正在探究：只改变 F₁ 方向，观察动力臂和所需动力比例如何变化。', true);
+          }
+        }
         render();
       }
     });
@@ -741,9 +834,31 @@
           const truth2 = K.forceArm(state.clickedO, g.p2, dir2);
           state.arm2 = { O: state.clickedO, foot: truth2.foot, dir: dir2, point: g.p2 };
           state.arm2End = null;
-          state.practicePhase = 'done';
+          if (exploreEnabled(ex())) {
+            state.practicePhase = 'explore';
+            state.exploreLastValidDir = K.norm(state.dirDraft || g.d1);
+            state.exploreStatus = 'valid';
+            const m0 = exploreMetrics(g, state.exploreLastValidDir);
+            if (!m0.nearZero && !m0.opposite) {
+              state.dirDraft = boundaryDirection(g, state.exploreLastValidDir);
+              state.exploreStatus = 'blocked';
+            }
+            setJudge('作图完成。进入“施力方向探究”：拖动红色 F₁ 箭头末端，观察动力臂 l₁ 和省力/费力程度实时变化。', true);
+          } else {
+            state.practicePhase = 'done';
+            setJudge('作图完成。天平两侧作用力方向由重力决定，本例不进行施力方向探究。', true);
+          }
         }
         render();
+      }
+      if (dragging === 'exploreDir') {
+        const mx = exploreMetrics(g, state.dirDraft || g.d1);
+        if (mx.nearZero || state.exploreStatus === 'blocked') {
+          setJudge('动力臂接近 0，这个方向几乎不能使杠杆绕 O 转动。', null);
+        } else {
+          const ratioText = isFinite(mx.ratio) ? mx.ratio.toFixed(2) : '∞';
+          setJudge('当前方向下 F₁/F₂ ≈ ' + ratioText + '。继续拖动红色箭头末端比较不同方向。', true);
+        }
       }
       dragging = null;
     });
