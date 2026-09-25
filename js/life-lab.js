@@ -127,12 +127,13 @@
     {
       id: 'chopsticks',
       name: '筷子',
+      pivotGiven: true,
       action: '分析：夹菜（不分析搅或敲）',
-      whyO: '手中两筷相抵处约束转动 → 支点 O',
+      whyO: '支点 O 已直接给出：手中两筷相抵、约束转动的位置。',
       view: '侧视',
       paramLabel: '手指捏的位置',
       getGeom(t) {
-        const O = K.v(200, 200);
+        const O = K.v(293, 165);
         const tip = K.v(620, 300);
         const finger = K.v(200 + 60 + t * 160, 200 + t * 30);
         return {
@@ -198,8 +199,8 @@
         const grip = K.v(210 + t * 25, 100 + t * 20);
         return {
           O, bar: [nail, O, grip],
-          p1: grip, d1: K.v(-0.35, -1),
-          p2: nail, d2: K.v(0, -1),
+          p1: grip, d1: K.v(0, -1),
+          p2: nail, d2: K.v(0, 1),
           f2: 100,
           decor: 'hammer',
         };
@@ -615,8 +616,10 @@
   }
 
   function clearAttempt() {
-    state.practicePhase = 'pivot';
-    state.clickedO = null;
+    const e = ex();
+    const g = geom();
+    state.practicePhase = e.pivotGiven ? 'dir' : 'pivot';
+    state.clickedO = e.pivotGiven ? { x: g.O.x, y: g.O.y } : null;
     state.dirDraft = null;
     state.armEnd = null;
     state.dir2Draft = null;
@@ -706,7 +709,12 @@
       if (state.step === 9) {
         state.practice = true;
         clearAttempt();
-        setJudge('你来画：① 点支点 ② 拖 F₁ 再画 l₁ ③ 拖 F₂ 再画 l₂', null);
+        setJudge(
+          ex().pivotGiven
+            ? '支点 O 已直接给出：从红色动力作用点拖出 F₁，再依次画 l₁、F₂、l₂。'
+            : '你来画：① 点支点 ② 拖 F₁ 再画 l₁ ③ 拖 F₂ 再画 l₂',
+          null
+        );
       }
       render();
     };
@@ -733,7 +741,12 @@
       state.practice = true;
       state.step = 9;
       clearAttempt();
-      setJudge('开始练习：请先在实物图上判断并点出支点 O。', null);
+      setJudge(
+        ex().pivotGiven
+          ? '开始练习：支点 O 已给出，请从红色动力作用点拖出 F₁。'
+          : '开始练习：请先在实物图上判断并点出支点 O。',
+        null
+      );
       render();
     }
 
