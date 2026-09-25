@@ -196,7 +196,7 @@
       const w = 540;
       const h = w * (217 / 1116);
       const P = (u, v) => K.v(x + u * w, y + v * h);
-      const O = P(0.32, 0.24);                 // 手中两筷相抵/约束转动处（按红圈校准）
+      const O = P(0.32, 0.24);                 // 红圈位置：手中两筷相抵/约束转动处，直接给出
       const tip = P(0.94, 0.79);
       const p1 = P(0.22 + t * 0.35, 0.3 + t * 0.06);
       return pack(O, p1, K.v(0.15, 1), tip, K.v(0, -1), [O, tip], 5, {
@@ -230,13 +230,13 @@
       });
     },
     hammer(t) {
-      // 与“画力臂工作台”羊角锤场景共用同一套 O / 钉 / 手柄装配关系
+      // 与“画力臂工作台”羊角锤场景完全共用同一套图形和装配关系。
       const O = K.v(431, 280);
       const nail = K.v(390, 275);
-      const grip = K.v(210 + t * 25, 100 + t * 20);
+      const grip = K.v(210, 100);
       return pack(O, grip, K.v(0, -1), nail, K.v(0, 1), [nail, O, grip], 100, {
         sharedHammerAssembly: true,
-        caption: '羊角锤拔钉：锤头外弧贴木板处是支点 O，羊角 V 口咬住钉帽，手在锤柄处施力。',
+        caption: '羊角锤拔钉：与“画力臂工作台”使用同一把羊角锤、同一木板和钉子装配。',
       });
     },
     wheelbarrow(t) {
@@ -267,29 +267,46 @@
       });
     },
     nailclipper(t) {
-      const x = 90;
-      const y = 120;
-      const w = 620;
-      const h = w * (279 / 1089);
+      const x = 150;
+      const y = 2;
+      const w = 500;
+      const h = w * (352 / 420);
       const P = (u, v) => K.v(x + u * w, y + v * h);
-      if (t < 0.5) {
-        const O = P(0.7, 0.42);
-        const p1 = P(0.94, 0.16);
-        const p2 = P(0.28, 0.36);
+
+      if (t < 1 / 3) {
+        // 图3第一幅力学图：压柄。O1 在圆柱销，A 端手压，C 点是负载。
+        const O = P(0.205, 0.70);
+        const p1 = P(0.815, 0.09);
+        const p2 = P(0.135, 0.73);
         return pack(O, p1, K.v(0, 1), p2, K.v(0, 1), [p2, O, p1], 20, {
-          stageName: '手柄级（省力）',
-          caption: '指甲剪 · 先看手柄这一级：支点在销钉，手压柄端，省力',
+          stageName: '① 压柄：第一类杠杆（省力）',
+          caption: '指甲剪①压柄：圆柱销是支点 O，手在柄端向下压；短臂端把力传给剪体。',
         });
       }
-      const O = P(0.1, 0.4);
-      const p1 = P(0.42, 0.38);
-      const p2 = P(0.04, 0.3);
-      return pack(O, p1, K.v(0, -1), p2, K.v(0, -1), [p1, O, p2], 40, {
-        stageName: '刀口级（费力）',
-        caption: '指甲剪 · 再看刀口这一级：支点在刀口销，费力但刀口位移小',
+
+      if (t < 2 / 3) {
+        // 图3第二幅力学图：上刀片/上弹片，以尾部连接 O2 为支点。
+        const O = P(0.955, 0.64);
+        const p1 = P(0.245, 0.72);
+        const p2 = P(0.045, 0.78);
+        return pack(O, p1, K.v(0, 1), p2, K.v(0, -1), [p2, p1, O], 35, {
+          stageName: '② 上刀口：第三类杠杆（费力）',
+          caption: '指甲剪②上刀口：尾部连接处是支点 O，传递力作用在中间，刀口在最前端。',
+        });
+      }
+
+      // 图3第三幅力学图：下刀片/下弹片，同样以尾部连接 O2 为支点。
+      const O = P(0.955, 0.64);
+      const p1 = P(0.235, 0.83);
+      const p2 = P(0.045, 0.86);
+      return pack(O, p1, K.v(0, -1), p2, K.v(0, 1), [p2, p1, O], 35, {
+        stageName: '③ 下刀口：第三类杠杆（费力）',
+        caption: '指甲剪③下刀口：尾部连接处是支点 O，中间受力，前端刀口对指甲作用。',
       });
     },
   };
+
+  function draw(g, id, t, opts) {  };
 
   function draw(g, id, t, opts) {
     const step = (opts && opts.step) || 1;
@@ -421,11 +438,30 @@
       const P = (u, v) => K.v(140 + u * 520, 40 + v * 520 * (590 / 974));
       axis(g, [P(0.16, 0.28), P(0.5, 0.22), P(0.84, 0.28)], showAxis);
     } else if (id === 'nailclipper') {
-      const w = 620;
-      const bar = fit(g, 'assets/life/clipper-cutout.webp', 1089, 279, 90, 120, w);
-      axis(g, t < 0.5
-        ? [bar.p(0.28, 0.36), bar.p(0.7, 0.42), bar.p(0.94, 0.16)]
-        : [bar.p(0.42, 0.38), bar.p(0.1, 0.4), bar.p(0.04, 0.3)], showAxis);
+      const w = 500;
+      const bar = fit(g, 'assets/life/clipper-cutout.webp', 420, 352, 150, 2, w);
+
+      let O, p1, p2;
+      if (t < 1 / 3) {
+        O = bar.p(0.205, 0.70);
+        p1 = bar.p(0.815, 0.09);
+        p2 = bar.p(0.135, 0.73);
+      } else if (t < 2 / 3) {
+        O = bar.p(0.955, 0.64);
+        p1 = bar.p(0.245, 0.72);
+        p2 = bar.p(0.045, 0.78);
+      } else {
+        O = bar.p(0.955, 0.64);
+        p1 = bar.p(0.235, 0.83);
+        p2 = bar.p(0.045, 0.86);
+      }
+
+      if (step >= 2) tag(g, O, '支点 O', -10, -14);
+      if (step >= 3) {
+        tag(g, p1, '动力点', 12, -12);
+        tag(g, p2, '阻力点', 10, 18);
+      }
+      axis(g, [p2, p1, O], showAxis);
     }
 
     if (L.caption) caption(g, L.caption);
