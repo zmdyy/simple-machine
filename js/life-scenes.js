@@ -53,6 +53,15 @@
     return K.v(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t);
   }
 
+  function rot(p, O, deg) {
+    const rad = (deg * Math.PI) / 180;
+    const cs = Math.cos(rad);
+    const sn = Math.sin(rad);
+    const dx = p.x - O.x;
+    const dy = p.y - O.y;
+    return K.v(O.x + cs * dx - sn * dy, O.y + sn * dx + cs * dy);
+  }
+
   function axis(g, pts, on) {
     if (!on || pts.length < 2) return;
     const d = pts.map((p, i) => (i ? 'L' : 'M') + p.x + ',' + p.y).join(' ');
