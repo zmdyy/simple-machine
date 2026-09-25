@@ -232,13 +232,14 @@
       view: '侧视实物',
       paramLabel: '当前杠杆（左=压柄，中=上刀口，右=下刀口）',
       stages: true,
+      defaultT: 0.15,
       getGeom(t) {
-        const P = (u, v) => K.v(170 + u * 460, 10 + v * 460 * (517 / 600));
+        const P = (u, v) => K.v(120 + u * 560, 4 + v * 560 * (882 / 1200));
 
         if (t < 1 / 3) {
-          const O = P(0.208, 0.705);
-          const hand = P(0.833, 0.092);
-          const load = P(0.118, 0.697);
+          const O = P(603 / 2048, 966 / 1505);
+          const hand = P(1323 / 2048, 244 / 1505);
+          const load = P(561 / 2048, 915 / 1505);
           return {
             O, bar: [load, O, hand],
             p1: hand, d1: K.v(0, 1),
@@ -414,7 +415,7 @@
   function renderList() {
     const box = document.getElementById('lifeList');
     box.innerHTML = EXAMPLES.map((e, i) => {
-      const g = sceneGeom(e, 0.5);
+      const g = sceneGeom(e, e.defaultT ?? 0.5);
       const a1 = K.forceArm(g.O, g.p1, g.d1);
       const a2 = K.forceArm(g.O, g.p2, g.d2);
       const cls = K.classifyLever(a1.armLen, a2.armLen);
@@ -692,6 +693,7 @@
       state.idx = +b.dataset.i;
       state.step = 1;
       state.practice = false;
+      state.t = ex().defaultT ?? 0.5;
       state.tPrev = null;
       state.showTruth = false;
       renderList();
