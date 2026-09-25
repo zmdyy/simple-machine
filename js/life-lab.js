@@ -233,12 +233,12 @@
       paramLabel: '当前杠杆（左=压柄，中=上刀口，右=下刀口）',
       stages: true,
       getGeom(t) {
-        const P = (u, v) => K.v(190 + u * 400, 10 + v * 400);
+        const P = (u, v) => K.v(170 + u * 460, 10 + v * 460 * (517 / 600));
 
         if (t < 1 / 3) {
-          const O = P(0.208, 0.681);
-          const hand = P(0.833, 0.153);
-          const load = P(0.118, 0.674);
+          const O = P(0.208, 0.705);
+          const hand = P(0.833, 0.092);
+          const load = P(0.118, 0.697);
           return {
             O, bar: [load, O, hand],
             p1: hand, d1: K.v(0, 1),
@@ -250,9 +250,9 @@
         }
 
         if (t < 2 / 3) {
-          const O = P(0.920, 0.620);
-          const input = P(0.240, 0.700);
-          const tip = P(0.050, 0.735);
+          const O = P(0.920, 0.635);
+          const input = P(0.240, 0.727);
+          const tip = P(0.050, 0.768);
           return {
             O, bar: [tip, input, O],
             p1: input, d1: K.v(0, 1),
@@ -263,9 +263,9 @@
           };
         }
 
-        const O = P(0.920, 0.620);
-        const input = P(0.240, 0.790);
-        const tip = P(0.050, 0.820);
+        const O = P(0.920, 0.635);
+        const input = P(0.240, 0.832);
+        const tip = P(0.050, 0.867);
         return {
           O, bar: [tip, input, O],
           p1: input, d1: K.v(0, -1),
