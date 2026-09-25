@@ -401,8 +401,7 @@
       const O = bar.p(0.32, 0.24);
       const tip = bar.p(0.94, 0.79);
       const p1 = bar.p(0.22 + t * 0.35, 0.3 + t * 0.06);
-      S().drawPivot(g, O);
-      tag(g, O, '支点 O', 12, -18);
+      // 筷子的支点由 life-lab 统一从第一步直接显示，避免重复绘制。
       S().el('ellipse', {
         cx: tip.x - 2, cy: tip.y - 12, rx: 14, ry: 8,
         fill: '#65a30d', stroke: '#3f6212', 'stroke-width': 1,
