@@ -173,8 +173,8 @@
       const w = 720;
       const h = w * (natH / natW);
       const P = (u, v) => K.v(x + u * w, y + v * h);
-      const O = P(0.255, 0.1);                 // 鼻端压住瓶盖：支点
-      const p2 = P(0.25, 0.265);               // 下唇钩住盖沿：阻力点（按实物位置下移）
+      const O = P(0.275, 0.13);                // 鼻端与瓶盖上沿的实际支承接触区
+      const p2 = P(0.270, 0.31);                // 下唇钩住盖沿：阻力作用点
       const u1 = 0.5 + t * 0.32;
       const v1 = 0.3 + (u1 - 0.55) * 0.95;
       const p1 = P(u1, v1);                    // 手柄：动力点
@@ -356,8 +356,8 @@
       const bar = fit(g, 'assets/life/opener-lift.png', natW, natH, x, y, w);
       const u1 = 0.5 + t * 0.32;
       const v1 = 0.3 + (u1 - 0.55) * 0.95;
-      const O = bar.p(0.255, 0.1);
-      const p2 = bar.p(0.25, 0.265);
+      const O = bar.p(0.275, 0.13);
+      const p2 = bar.p(0.270, 0.31);
       const p1 = bar.p(u1, v1);
       if (step >= 2) tag(g, O, '支点 O', 12, -4);
       if (step >= 3) {
