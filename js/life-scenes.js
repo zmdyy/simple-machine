@@ -178,7 +178,7 @@
       const u1 = 0.5 + t * 0.32;
       const v1 = 0.3 + (u1 - 0.55) * 0.95;
       const p1 = P(u1, v1);                    // 手柄：动力点
-      return pack(O, p1, K.v(0, -1), p2, K.v(0, 1), [p2, O, p1], 40, {
+      return pack(O, p1, K.v(0, -1), p2, K.v(0, -1), [p2, O, p1], 40, {
         fixedKeyPoints: true,
         caption: '开瓶器：鼻端压在瓶盖上作支点 O，下唇钩住盖沿，手在柄端向上抬。',
       });
@@ -225,7 +225,7 @@
       const O = P(0.4, 0.48);
       const blade = P(0.86, 0.48);
       const p1 = P(0.08 + t * 0.18, 0.48);
-      return pack(O, p1, K.v(0, 1), blade, K.v(0, -1), [P(0.04, 0.48), O, blade], 80, {
+      return pack(O, p1, K.v(0, 1), blade, K.v(0, 1), [P(0.04, 0.48), O, blade], 80, {
         caption: '坐船划（俯视）：桨架是支点，手拉桨柄，水阻碍桨叶',
       });
     },
@@ -238,7 +238,7 @@
       const O = P(0.68, 0.58);
       const nail = P(0.78, 0.42);
       const grip = P(0.28, 0.72);
-      return pack(O, grip, K.v(-0.25, -1), nail, K.v(0, 1), [nail, O, grip], 100, {
+      return pack(O, grip, K.v(-0.25, -1), nail, K.v(0, -1), [nail, O, grip], 100, {
         caption: '拔钉：锤头抵住木板是支点，手向上扳柄，钉子阻碍羊角',
       });
     },
@@ -279,7 +279,7 @@
         const O = P(0.7, 0.42);
         const p1 = P(0.94, 0.16);
         const p2 = P(0.28, 0.36);
-        return pack(O, p1, K.v(0, 1), p2, K.v(0, -1), [p2, O, p1], 20, {
+        return pack(O, p1, K.v(0, 1), p2, K.v(0, 1), [p2, O, p1], 20, {
           stageName: '手柄级（省力）',
           caption: '指甲剪 · 先看手柄这一级：支点在销钉，手压柄端，省力',
         });
@@ -287,7 +287,7 @@
       const O = P(0.1, 0.4);
       const p1 = P(0.42, 0.38);
       const p2 = P(0.04, 0.3);
-      return pack(O, p1, K.v(0, -1), p2, K.v(0, 1), [p1, O, p2], 40, {
+      return pack(O, p1, K.v(0, -1), p2, K.v(0, -1), [p1, O, p2], 40, {
         stageName: '刀口级（费力）',
         caption: '指甲剪 · 再看刀口这一级：支点在刀口销，费力但刀口位移小',
       });
