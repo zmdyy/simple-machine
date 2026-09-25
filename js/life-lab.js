@@ -61,30 +61,6 @@
       },
     },
     {
-      id: 'door',
-      name: '门',
-      key: false,
-      action: '分析：推开门',
-      whyO: '铰链不移 → 支点 O',
-      view: '俯视',
-      paramLabel: '推力点离铰链的远近',
-      getGeom(t) {
-        const O = K.v(160, 210);
-        const tip = K.v(640, 210);
-        const pushX = 200 + t * 400;
-        const push = K.v(pushX, 210);
-        const mid = K.v(400, 210);
-        const bar = [O, tip];
-        return {
-          O, bar,
-          p1: push, d1: K.v(0, -1),
-          p2: mid, d2: K.v(0, 1),
-          f2: 40,
-          decor: 'door',
-        };
-      },
-    },
-    {
       id: 'opener',
       name: '开瓶器',
       key: true,
@@ -108,6 +84,7 @@
     {
       id: 'rod',
       name: '钓鱼竿',
+      freeForceDir: true,
       action: '分析：提起鱼（不是甩竿）',
       whyO: '竿尾抵腰/后手按住 → 支点 O；前手抬竿为动力',
       view: '侧视',
@@ -134,7 +111,7 @@
       paramLabel: '手指捏的位置',
       getGeom(t) {
         const O = K.v(200, 200);
-        const tip = K.v(620, 280);
+        const tip = K.v(620, 300);
         const finger = K.v(200 + 60 + t * 160, 200 + t * 30);
         return {
           O, bar: [O, tip],
@@ -188,6 +165,7 @@
     {
       id: 'hammer',
       name: '羊角锤',
+      freeForceDir: true,
       action: '分析：拔钉子',
       whyO: '锤头抵木板处 → 支点 O；硬棒可以弯',
       view: '侧视',
@@ -522,6 +500,27 @@
 
   let dragging = null;
 
+  function judgeFreeForceDirection(example, g, dir) {
+    const arm = K.forceArm(g.O, g.p1, dir);
+    if (arm.armLen < 4) {
+      return {
+        ok: false,
+        message: '这个施力方向的作用线几乎通过支点，动力臂接近 0。方向本身可以存在，但几乎不能产生有效转动，请换一个方向。',
+      };
+    }
+    const t1 = K.torque2D(g.O, g.p1, dir);
+    const t2 = K.torque2D(g.O, g.p2, g.d2);
+    if (Math.abs(t2) > 1e-6 && t1 * t2 >= 0) {
+      return {
+        ok: false,
+        message: example.id === 'rod'
+          ? '这个方向会让鱼竿向与提鱼相反的方向转动。请从前手位置重新选择一个能抬起鱼竿的方向。'
+          : '这个方向产生的转动效果与拔钉方向相反，请重新选择施力方向。',
+      };
+    }
+    return { ok: true, message: '这个动力方向物理上合理。系统会保留你选择的方向，请从支点 O 向它的作用线作垂线。' };
+  }
+
   function bind() {
     renderList();
     document.getElementById('lifeList').onclick = (e) => {
@@ -633,12 +632,21 @@
         return;
       }
       if (state.practicePhase === 'dir') {
+        if (K.dist(p, g.p1) > 36) {
+          setJudge('请从红色动力作用点附近按下，再拖出 F₁ 的方向。', false);
+          return;
+        }
         dragging = 'dir';
-        state.dirDraft = K.norm(K.sub(p, g.p1));
+        state.dirDraft = null;
         render();
         return;
       }
       if (state.practicePhase === 'arm') {
+        const O0 = state.clickedO || g.O;
+        if (K.dist(p, O0) > 36) {
+          setJudge('动力方向已经确定，不会再改变。请从支点 O 开始拖动力臂。', false);
+          return;
+        }
         dragging = 'arm';
         state.armEnd = p;
         render();
@@ -665,7 +673,8 @@
       const p = svgPoint(evt);
       const g = geom();
       if (dragging === 'dir') {
-        state.dirDraft = K.norm(K.sub(p, g.p1));
+        const dv = K.sub(p, g.p1);
+        if (K.len(dv) > 8) state.dirDraft = K.norm(dv);
         render();
       } else if (dragging === 'arm') {
         state.armEnd = p;
@@ -685,12 +694,23 @@
       }
       const g = geom();
       if (dragging === 'dir' && state.dirDraft) {
-        const ang = Math.acos(Math.min(1, Math.abs(K.dot(state.dirDraft, K.norm(g.d1)))));
-        if ((ang * 180) / Math.PI < 28) {
-          setJudge('F₁ 方向可以。从你点的 O 向这条红虚线作垂线，拖到交点。', true);
-          state.practicePhase = 'arm';
+        if (ex().freeForceDir) {
+          const jr = judgeFreeForceDirection(ex(), g, state.dirDraft);
+          if (jr.ok) {
+            state.practicePhase = 'arm';
+            setJudge(jr.message, true);
+          } else {
+            setJudge(jr.message, false);
+          }
         } else {
-          setJudge('想想这个动作里人实际往哪边发力。', false);
+          const signedDot = Math.max(-1, Math.min(1, K.dot(state.dirDraft, K.norm(g.d1))));
+          const ang = Math.acos(signedDot);
+          if ((ang * 180) / Math.PI < 28) {
+            setJudge('F₁ 方向可以。从你点的 O 向这条红虚线作垂线，拖到交点。', true);
+            state.practicePhase = 'arm';
+          } else {
+            setJudge('想想这个动作里人实际往哪边发力。', false);
+          }
         }
       }
       if (dragging === 'arm' && state.armEnd && state.clickedO && state.dirDraft) {
@@ -708,7 +728,8 @@
         render();
       }
       if (dragging === 'dir2' && state.dir2Draft) {
-        const ang2 = Math.acos(Math.min(1, Math.abs(K.dot(state.dir2Draft, K.norm(g.d2)))));
+        const dot2 = Math.max(-1, Math.min(1, K.dot(state.dir2Draft, K.norm(g.d2))));
+        const ang2 = Math.acos(dot2);
         if ((ang2 * 180) / Math.PI < 28) {
           setJudge('F₂ 方向可以。从 O 向蓝色虚线作垂线，拖到交点，标出 l₂。', true);
           state.practicePhase = 'arm2';
