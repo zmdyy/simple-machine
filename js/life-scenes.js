@@ -196,7 +196,7 @@
       const w = 540;
       const h = w * (217 / 1116);
       const P = (u, v) => K.v(x + u * w, y + v * h);
-      const O = P(0.06, 0.28);
+      const O = P(0.32, 0.24);                 // 手中两筷相抵/约束转动处（按红圈校准）
       const tip = P(0.94, 0.79);
       const p1 = P(0.22 + t * 0.35, 0.3 + t * 0.06);
       return pack(O, p1, K.v(0.15, 1), tip, K.v(0, -1), [O, tip], 5, {
@@ -229,17 +229,14 @@
         caption: '坐船划（俯视）：桨架是支点，手拉桨柄，水阻碍桨叶',
       });
     },
-    hammer() {
-      const x = 80;
-      const y = 40;
-      const w = 520;
-      const h = w * (786 / 1004);
-      const P = (u, v) => K.v(x + u * w, y + v * h);
-      const O = P(0.68, 0.58);
-      const nail = P(0.78, 0.42);
-      const grip = P(0.28, 0.72);
-      return pack(O, grip, K.v(-0.25, -1), nail, K.v(0, -1), [nail, O, grip], 100, {
-        caption: '拔钉：锤头抵住木板是支点，手向上扳柄，钉子阻碍羊角',
+    hammer(t) {
+      // 与“画力臂工作台”羊角锤场景共用同一套 O / 钉 / 手柄装配关系
+      const O = K.v(431, 280);
+      const nail = K.v(390, 275);
+      const grip = K.v(210 + t * 25, 100 + t * 20);
+      return pack(O, grip, K.v(0, -1), nail, K.v(0, 1), [nail, O, grip], 100, {
+        sharedHammerAssembly: true,
+        caption: '羊角锤拔钉：锤头外弧贴木板处是支点 O，羊角 V 口咬住钉帽，手在锤柄处施力。',
       });
     },
     wheelbarrow(t) {
@@ -273,7 +270,7 @@
       const x = 90;
       const y = 120;
       const w = 620;
-      const h = w * (274 / 1108);
+      const h = w * (279 / 1089);
       const P = (u, v) => K.v(x + u * w, y + v * h);
       if (t < 0.5) {
         const O = P(0.7, 0.42);
@@ -384,13 +381,16 @@
     } else if (id === 'chopsticks') {
       const w = 540;
       const bar = fit(g, 'assets/life/chopsticks.png', 1116, 217, 120, 140, w);
+      const O = bar.p(0.32, 0.24);
       const tip = bar.p(0.94, 0.79);
       const p1 = bar.p(0.22 + t * 0.35, 0.3 + t * 0.06);
+      S().drawPivot(g, O);
+      tag(g, O, '支点 O', 12, -18);
       S().el('ellipse', {
         cx: tip.x - 2, cy: tip.y - 12, rx: 14, ry: 8,
         fill: '#65a30d', stroke: '#3f6212', 'stroke-width': 1,
       }, g);
-      axis(g, [bar.p(0.06, 0.28), tip], showAxis);
+      axis(g, [O, tip], showAxis);
     } else if (id === 'tweezers') {
       const w = 520;
       const bar = fit(g, 'assets/life/tweezers.png', 1116, 150, 140, 160, w);
@@ -402,9 +402,8 @@
       tag(g, bar.p(0.86, 0.48), '桨叶', 8, 22);
       axis(g, [bar.p(0.04, 0.48), bar.p(0.4, 0.48), bar.p(0.86, 0.48)], showAxis);
     } else if (id === 'hammer') {
-      fit(g, 'assets/life/hammer.png', 1004, 786, 80, 40, 520);
-      const P = (u, v) => K.v(80 + u * 520, 40 + v * 520 * (786 / 1004));
-      axis(g, [P(0.78, 0.42), P(0.68, 0.58), P(0.28, 0.72)], showAxis);
+      S().drawClawHammer(g, { O: L.O, grip: L.p1, nail: L.p2 });
+      axis(g, [L.p2, L.O, L.p1], showAxis);
     } else if (id === 'wheelbarrow') {
       const w = 660;
       const bar = fit(g, 'assets/life/wheel.png', 1066, 407, 70, 70, w);
@@ -423,7 +422,7 @@
       axis(g, [P(0.16, 0.28), P(0.5, 0.22), P(0.84, 0.28)], showAxis);
     } else if (id === 'nailclipper') {
       const w = 620;
-      const bar = fit(g, 'assets/life/clipper.png', 1108, 274, 90, 120, w);
+      const bar = fit(g, 'assets/life/clipper-cutout.webp', 1089, 279, 90, 120, w);
       axis(g, t < 0.5
         ? [bar.p(0.28, 0.36), bar.p(0.7, 0.42), bar.p(0.94, 0.16)]
         : [bar.p(0.42, 0.38), bar.p(0.1, 0.4), bar.p(0.04, 0.3)], showAxis);
