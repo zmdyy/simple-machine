@@ -75,7 +75,7 @@
         return {
           O, bar: [K.v(260, 210), O, hand],
           p1: hand, d1: K.v(0, -1),
-          p2: cap, d2: K.v(0, 1),
+          p2: cap, d2: K.v(0, -1),
           f2: 50,
           decor: 'opener',
         };
@@ -96,7 +96,7 @@
         return {
           O, bar: [O, tip],
           p1: hand, d1: K.v(0, -1),
-          p2: tip, d2: K.v(0, 1),
+          p2: tip, d2: K.v(0, -1),
           f2: 20,
           decor: 'rod',
         };
@@ -156,7 +156,7 @@
         return {
           O, bar: [handle, O, blade],
           p1: handle, d1: K.v(0, 1),
-          p2: blade, d2: K.v(0, -1),
+          p2: blade, d2: K.v(0, 1),
           f2: 80,
           decor: 'oar',
         };
@@ -177,7 +177,7 @@
         return {
           O, bar: [nail, O, grip],
           p1: grip, d1: K.v(-0.35, -1),
-          p2: nail, d2: K.v(0, 1),
+          p2: nail, d2: K.v(0, -1),
           f2: 100,
           decor: 'hammer',
         };
@@ -239,7 +239,7 @@
           return {
             O, bar: [mid, O, hand],
             p1: hand, d1: K.v(0, 1),
-            p2: mid, d2: K.v(0, -1),
+            p2: mid, d2: K.v(0, 1),
             f2: 20,
             decor: 'clipper1',
             stageName: '手柄级（省力）',
