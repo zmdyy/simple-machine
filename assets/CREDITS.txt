@@ -1,0 +1,5 @@
+claw-hammer.png
+Source: https://commons.wikimedia.org/wiki/File:Claw-hammer.jpg
+Author: Evan-Amos
+License: Public domain (released by author)
+Processed: white background removed, rotated for nail-pulling pose

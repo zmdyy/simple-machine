@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>简单机械 · 杠杆 — 力臂 · 生活 · 人体 · 平衡 · 视频</title>
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="app-header">
+      <div class="brand">简单机械 · 杠杆<small>人教版八下 · 力臂 / 生活 / 人体 / 平衡 / 视频</small></div>
+      <nav class="nav-tabs">
+        <button type="button" class="active" data-lab="arm">画力臂工作台</button>
+        <button type="button" data-lab="life">生活杠杆拆解</button>
+        <button type="button" data-lab="body">人体杠杆</button>
+        <button type="button" data-lab="balance">平衡探究</button>
+        <button type="button" data-lab="video">动态杠杆 / 视频</button>
+      </nav>
+    </header>
+
+    <main>
+      <!-- ========== 画力臂 ========== -->
+      <section class="lab active" id="labArm">
+        <div class="stage">
+          <div class="stage-toolbar">
+            <button type="button" class="btn active-toggle" id="armModeDemo">教师演示</button>
+            <button type="button" class="btn" id="armModePractice">学生练习</button>
+            <span class="sep"></span>
+            <button type="button" class="btn" id="armStepPrev">上一步</button>
+            <span class="step-badge" id="armStepLabel">⑤ 标出力臂</span>
+            <button type="button" class="btn primary" id="armStepNext">下一步</button>
+            <button type="button" class="btn ghost" id="armStepAll">一键画完</button>
+            <span class="sep"></span>
+            <button type="button" class="btn" id="armToggleWrong">常见错画</button>
+            <button type="button" class="btn" id="armResetPractice">重置练习</button>
+          </div>
+          <svg id="armSvg" viewBox="0 0 800 420" preserveAspectRatio="xMidYMid meet">
+            <g id="armBar"></g>
+            <g id="armDraw"></g>
+            <g id="armUi"></g>
+          </svg>
+        </div>
+        <aside class="side">
+          <div class="task-card" id="armTaskCard">
+            <div class="task-card-title" id="armTaskTitle">看规范作图</div>
+            <div class="task-card-step" id="armTaskStep"></div>
+            <p class="task-card-body" id="armTaskBody"></p>
+            <p class="task-card-known" id="armTaskKnown"></p>
+          </div>
+          <h2>选一档情景</h2>
+          <div class="chip-row" id="armSceneChips"></div>
+          <h3 id="armReadoutHeading">读数</h3>
+          <div class="readout" id="armReadout"></div>
+          <h3>判定 / 提示</h3>
+          <div class="judge-msg" id="armJudge">打开页面后：先选情景，教师演示看五步作图；学生练习按右侧任务卡三步完成。</div>
+          <p class="hint">约定：<strong style="color:#dc2626">动力与动力臂用红色</strong>，<strong style="color:#2563eb">阻力与阻力臂用蓝色</strong>。力臂 = 支点到<strong>力的作用线</strong>的垂直距离；两端是<strong>朝外的箭头</strong>。本台练画力臂，转动方向请到「平衡探究」比较力矩。</p>
+        </aside>
+      </section>
+
+      <!-- ========== 生活拆解 ========== -->
+      <section class="lab" id="labLife">
+        <div class="stage">
+          <div class="stage-toolbar">
+            <button type="button" class="btn" id="lifePrev">上一步</button>
+            <span class="step-badge" id="lifeStepBadge">步骤 1 / 9</span>
+            <button type="button" class="btn primary" id="lifeNext">下一步</button>
+            <button type="button" class="btn ghost" id="lifeSkip">跳到调参数</button>
+            <span class="sep"></span>
+            <button type="button" class="btn" id="lifePerp">改成垂直于杆</button>
+            <button type="button" class="btn" id="lifeExitPractice">退出你来画</button>
+          </div>
+          <svg id="lifeSvg" viewBox="0 0 800 420" preserveAspectRatio="xMidYMid meet">
+            <g id="lifeBar"></g>
+            <g id="lifeDraw"></g>
+            <g id="lifeUi"></g>
+          </svg>
+        </div>
+        <aside class="side">
+          <h2>生活例子</h2>
+          <div class="life-list" id="lifeList"></div>
+          <p class="hint" id="lifeAction"></p>
+          <p class="hint" id="lifeWhy"></p>
+          <div class="moment-bars">
+            <div class="moment-bar-label"><span id="lifeM1Lab">F₁·l₁</span></div>
+            <div class="moment-bar"><span class="m1" id="lifeM1" style="width:50%"></span></div>
+            <div class="moment-bar-label"><span id="lifeM2Lab">F₂·l₂</span></div>
+            <div class="moment-bar"><span class="m2" id="lifeM2" style="width:50%"></span></div>
+          </div>
+          <div class="readout" id="lifeClass">—</div>
+          <div id="lifeParam" hidden>
+            <div class="slider-row">
+              <label><span id="lifeParamLabel">参数</span><output id="lifeParamOut">0.55</output></label>
+              <input type="range" id="lifeParamVal" min="0" max="1" step="0.01" value="0.55" />
+            </div>
+          </div>
+          <div class="judge-msg" id="lifeJudge">从撬棒或扫把（课眼）开始，点「下一步」分步揭示。</div>
+          <p class="hint">忽略摩擦，按刚能撬动/推开来估算 F₁。作用点画在杆上。</p>
+        </aside>
+      </section>
+
+      <!-- ========== 人体杠杆 ========== -->
+      <section class="lab" id="labBody">
+        <div class="stage">
+          <div class="stage-toolbar">
+            <button type="button" class="btn" id="bodyPrev">上一步</button>
+            <span class="step-badge" id="bodyStepBadge">步骤 1 / 9</span>
+            <button type="button" class="btn primary" id="bodyNext">下一步</button>
+            <button type="button" class="btn ghost" id="bodySkip">跳到调参数</button>
+            <span class="sep"></span>
+            <button type="button" class="btn active-toggle" id="bodyToggleBone" data-on="1">骨</button>
+            <button type="button" class="btn active-toggle" id="bodyToggleMuscle" data-on="1">肌</button>
+            <span class="sep"></span>
+            <label class="toolbar-slider" title="分离骨骼与肌肉便于观察">分离观察
+              <input type="range" id="bodyExplode" min="0" max="100" step="1" value="0" />
+            </label>
+            <button type="button" class="btn" id="bodyExitPractice">退出你来画</button>
+            <span class="hint" id="body3dStatus" style="margin-left:auto">侧视实拍</span>
+          </div>
+          <div class="body3d-stage" id="body3dStage">
+            <canvas id="body3dCanvas"></canvas>
+            <svg id="bodySvg" viewBox="0 0 800 420" preserveAspectRatio="xMidYMid meet">
+              <g id="bodyBar"></g>
+              <g id="bodyDraw"></g>
+              <g id="bodyUi"></g>
+            </svg>
+            <div class="body3d-boot" id="body3dBoot">
+              <div class="body3d-boot-card">
+                <div class="body3d-boot-title" id="body3dBootTitle">正在加载 3D 解剖模型</div>
+                <p class="body3d-boot-msg" id="body3dBootMsg">约 8MB（BodyParts3D / Z-Anatomy）。请用本地网页地址打开，不要直接双击 HTML。</p>
+                <p class="body3d-boot-url">正确地址：<code>http://127.0.0.1:5500/index.html</code></p>
+                <p class="body3d-boot-hint" id="body3dBootHint">启动服务：在本文件夹执行 <code>python -m http.server 5500</code></p>
+              </div>
+            </div>
+            <div class="body3d-pick" id="body3dPick" hidden></div>
+          </div>
+        </div>
+        <aside class="side">
+          <h2>人体动作</h2>
+          <div class="life-list" id="bodyList"></div>
+          <p class="hint" id="bodyAction"></p>
+          <p class="hint" id="bodyWhy"></p>
+          <div class="moment-bars">
+            <div class="moment-bar-label"><span id="bodyM1Lab">F₁·l₁</span></div>
+            <div class="moment-bar"><span class="m1" id="bodyM1" style="width:50%"></span></div>
+            <div class="moment-bar-label"><span id="bodyM2Lab">F₂·l₂</span></div>
+            <div class="moment-bar"><span class="m2" id="bodyM2" style="width:50%"></span></div>
+          </div>
+          <div class="readout" id="bodyClass">—</div>
+          <div id="bodyParam" hidden>
+            <div class="slider-row">
+              <label><span id="bodyParamLabel">参数</span><output id="bodyParamOut">0.45</output></label>
+              <input type="range" id="bodyParamVal" min="0" max="1" step="0.01" value="0.45" />
+            </div>
+          </div>
+          <div class="task-card" id="bodyFilmCard">
+            <div class="task-card-title">拍摄卡</div>
+            <p class="task-card-body" id="bodyFilmTip">侧拍整段动作，关节别裁出画外。</p>
+            <button type="button" class="btn primary" id="bodyOpenVideo">用本课口令打开视频叠力臂</button>
+          </div>
+          <div class="judge-msg" id="bodyJudge">从踮脚（课眼）开始，点「下一步」分步揭示。</div>
+          <p class="hint"><strong>读图：</strong>侧视实拍。关节/着地点是 O，肌肉拉力是红 F₁，重力竖直向下是蓝 F₂。踮脚、头颈可随滑块转动；弯腰与蹲抬是两张对照。重力恒竖直。</p>
+          <p class="hint body-attr" id="bodyAttr">解剖数据：BodyParts3D (DBCLS) · CC BY 4.0 · 经 Z-Anatomy 整理</p>
+        </aside>
+      </section>
+
+      <!-- ========== 平衡探究 ========== -->
+      <section class="lab" id="labBalance">
+        <div class="stage">
+          <div class="stage-toolbar">
+            <button type="button" class="btn active-toggle" id="balModeBoth">两侧实验</button>
+            <button type="button" class="btn" id="balModeSame">同侧实验</button>
+            <span class="sep"></span>
+            <button type="button" class="btn" id="balUnlevel">制造未调平</button>
+            <button type="button" class="btn" id="balLevelNuts">调螺母水平</button>
+            <button type="button" class="btn" id="balClearHooks">清空钩码</button>
+            <button type="button" class="btn primary" id="balDropHere">在高亮格挂 1 枚</button>
+            <span class="sep"></span>
+            <span id="balStatus" class="hint"></span>
+          </div>
+          <canvas id="balCanvas" style="flex:1;width:100%;min-height:0"></canvas>
+          <div class="tray" id="balTray">
+            <span>钩码 50 g = 0.5 N<br>拖到杆上或点右侧按钮</span>
+            <div class="hook-chip" title="拖到杠杆刻度"></div>
+            <div class="hook-chip"></div>
+          </div>
+          <div class="toast" id="balToast"></div>
+        </div>
+        <aside class="side">
+          <h2>平衡探究</h2>
+          <p class="hint">先调螺母使杆水平 → 两侧挂钩码（<b>叠挂</b>=同一格多枚，改 F；换格改 l）→ 水平后记入表格。同侧模式：钩码向下 + 测力计向上。</p>
+          <p class="hint" id="balSameTip" hidden></p>
+          <div class="moment-bars">
+            <div class="moment-bar-label"><span id="balBarLLab">左侧</span></div>
+            <div class="moment-bar"><span class="m2" id="balBarL" style="width:40%"></span></div>
+            <div class="moment-bar-label"><span id="balBarRLab">右侧</span></div>
+            <div class="moment-bar"><span class="m1" id="balBarR" style="width:40%"></span></div>
+          </div>
+          <div id="balSpringPanel" hidden>
+            <h3>弹簧测力计（向上）</h3>
+            <div class="slider-row">
+              <label>拉力 F₁ <output id="balSpringFOut">1.5 N</output></label>
+              <input type="range" id="balSpringF" min="0.5" max="5" step="0.1" value="1.5" />
+            </div>
+            <div class="slider-row">
+              <label>挂点格数（右为正） <output id="balSpringGridOut">6</output></label>
+              <input type="range" id="balSpringGrid" min="1" max="10" step="1" value="6" />
+            </div>
+          </div>
+          <div class="mode-row">
+            <button type="button" class="btn primary" id="balRecord">记入表格</button>
+            <button type="button" class="btn" id="balClearTable">清空表</button>
+          </div>
+          <h3>乘积对照（最近一行）</h3>
+          <div class="moment-bars">
+            <div class="moment-bar-label"><span id="balProd1Lab">F₁l₁</span></div>
+            <div class="moment-bar"><span class="m1" id="balProd1" style="width:0"></span></div>
+            <div class="moment-bar-label"><span id="balProd2Lab">F₂l₂</span></div>
+            <div class="moment-bar"><span class="m2" id="balProd2" style="width:0"></span></div>
+          </div>
+          <div style="overflow:auto;max-height:180px">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>#</th><th>侧</th><th>F₁</th><th>l₁</th><th>F₂</th><th>l₂</th><th>F₁l₁</th><th>F₂l₂</th><th>水平</th>
+                </tr>
+              </thead>
+              <tbody id="balTableBody"></tbody>
+            </table>
+          </div>
+          <p class="hint" id="balConclusion">至少记录 3 组水平平衡的两侧数据；再加 1 组同侧更完整。</p>
+        </aside>
+      </section>
+
+      <!-- ========== 视频叠力臂 ========== -->
+      <section class="lab" id="labVideo">
+        <div class="stage">
+          <div class="stage-toolbar">
+            <button type="button" class="btn active-toggle" id="dynModeLife">动态生活杠杆</button>
+            <button type="button" class="btn" id="dynModeTrack">视频跟踪（拓展）</button>
+            <span class="sep"></span>
+            <button type="button" class="btn primary" id="dynPlay">开始演示</button>
+            <button type="button" class="btn" id="dynReset">重置</button>
+            <span class="step-badge" id="dynStatus">选情境 → 设定力 → 观察力臂</span>
+          </div>
+
+          <div id="dynLifePanel" class="dyn-life-panel">
+            <svg id="dynLifeSvg" viewBox="0 0 800 330" preserveAspectRatio="xMidYMid meet"></svg>
+            <svg id="dynLifeChart" viewBox="0 0 800 190" preserveAspectRatio="none" class="vid-chart"></svg>
+          </div>
+
+          <div class="vid-import-row" id="vidAdvancedToolbar" hidden>
+            <button type="button" class="btn" data-vid-mode="seesaw">跷跷板示例</button>
+            <button type="button" class="btn active-toggle" data-vid-mode="import">导入我的视频</button>
+            <button type="button" class="btn primary" id="vidPlay">播放</button>
+            <button type="button" class="btn" id="vidReset">回到起点</button>
+            <span class="step-badge" id="vidMarkStep">① 点支点 O</span>
+          </div>
+
+          <div id="vidSeesawPanel" hidden>
+            <svg id="vidSeesawSvg" viewBox="0 0 800 320" preserveAspectRatio="xMidYMid meet">
+              <g id="vidSeesawBoard"></g>
+              <g id="vidSeesawDraw"></g>
+            </svg>
+            <svg id="vidChartSvg" viewBox="0 0 800 168" preserveAspectRatio="none" class="vid-chart"></svg>
+          </div>
+
+          <div id="vidImportPanel" hidden>
+            <div class="vid-import-row">
+              <label class="btn">选择视频<input type="file" id="vidFile" accept="video/*" hidden /></label>
+              <button type="button" class="btn" id="vidRemark">重新标定</button>
+              <button type="button" class="btn ghost" id="vidSkipP2">跳过阻力点</button>
+              <label class="hint" style="margin:0">
+                <input type="checkbox" id="vidTrackOn" checked /> 播放时跟踪
+              </label>
+              <label class="hint" style="margin:0">
+                <input type="checkbox" id="vidRigidOn" checked /> 杆身轮廓贴板
+              </label>
+            </div>
+            <div class="vid-stage-wrap" id="vidStageWrap">
+              <video id="vidPlayer" playsinline></video>
+              <div class="vid-overlay-wrap" id="vidOverlayWrap">
+                <svg id="vidOverlaySvg" viewBox="0 0 1000 562.5" preserveAspectRatio="xMidYMid meet"></svg>
+              </div>
+            </div>
+            <svg id="vidImportChartSvg" viewBox="0 0 800 168" preserveAspectRatio="none" class="vid-chart"></svg>
+          </div>
+        </div>
+        <aside class="side">
+          <div id="dynLifeSide">
+            <div class="task-card">
+              <div class="task-card-title">动态生活杠杆</div>
+              <div class="task-card-step">力臂随姿态变化</div>
+              <p class="task-card-body">设定动力后播放：程序按实时力矩判断能否撬动，并画出 l₁、l₂ 及力矩曲线。</p>
+            </div>
+            <h3>选择情境</h3>
+            <div class="chip-row" id="dynSceneChips"></div>
+            <div class="slider-row">
+              <label>施加的动力 F₁ <output id="dynForceOut">120 N</output></label>
+              <input type="range" id="dynForce" min="20" max="400" step="5" value="120" />
+            </div>
+            <h3>实时读数</h3>
+            <div class="readout" id="dynReadout"></div>
+            <div class="judge-msg" id="dynJudge">先选择情境并设定动力。</div>
+            <p class="hint">曲线横轴为时间 t/s；左纵轴为力臂 l/cm；右纵轴为力矩 M/(N·m)。</p>
+          </div>
+          <div id="vidLegacySide" hidden>
+          <div class="task-card">
+            <div class="task-card-title">视频叠力臂 · 同一内核</div>
+            <div class="task-card-step">重力竖直 · 力臂随姿态变</div>
+            <p class="task-card-body" id="vidTaskBody"></p>
+          </div>
+          <div id="vidSeesawControls">
+            <h3>跷跷板参数</h3>
+            <div class="slider-row">
+              <label>摆角幅度 <output id="vidAmpOut">22°</output></label>
+              <input type="range" id="vidAmp" min="5" max="35" step="1" value="22" />
+            </div>
+            <div class="slider-row">
+              <label>周期 <output id="vidPeriodOut">4.0 s</output></label>
+              <input type="range" id="vidPeriod" min="2" max="8" step="0.5" value="4" />
+            </div>
+          </div>
+          <h3>读数</h3>
+          <div class="readout" id="vidReadout">—</div>
+          <h3>判定 / 提示</h3>
+          <div class="judge-msg" id="vidJudge">先看跷跷板课眼：播放后观察力臂随 θ 变短变长。</div>
+          <p class="hint">叠加层与「画力臂工作台」同一套符号。人体杠杆页「拍摄卡」会带入口令跳转本页。</p>
+          </div>
+        </aside>
+      </section>
+    </main>
+  </div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script src="js/kernel.js?v=20260320m"></script>
+  <script src="js/svg-draw.js?v=20260320m"></script>
+  <script src="js/arm-lab.js?v=20260922i"></script>
+  <script src="js/life-scenes.js?v=20260923a"></script>
+  <script src="js/life-lab.js?v=20260922m"></script>
+  <script src="js/anatomy-rigs.js?v=20260320m"></script>
+  <script type="module" src="js/body-3d.js?v=20260320m"></script>
+  <script src="js/body-scenes.js?v=20260922a"></script>
+  <script src="js/body-lab.js?v=20260922k"></script>
+  <script src="js/balance-lab.js?v=20260320m"></script>
+  <script src="js/video-lab.js?v=20260320m"></script>
+  <script src="js/dynamic-life-lab.js?v=20260923a"></script>
+  <script src="js/app.js?v=20260320m"></script>
+</body>
+</html>
