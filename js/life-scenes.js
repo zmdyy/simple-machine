@@ -159,23 +159,10 @@
       const P = (u, v) => K.v(x + u * w, y + v * h);
       const O = P(0.36, 0.04);                 // 上手：支点
       const head = P(0.38, 0.97);              // 扫把头：阻力作用点
-      const p1 = P(0.36, 0.22 + t * 0.32);     // 下手：动力作用点
+      const p1 = P(0.405, 0.22 + t * 0.32);    // 下手：动力作用点（校准到实物杆中心）
       return pack(O, p1, K.v(1, 0.08), head, K.v(-1, 0), [O, head], 30, {
         fixedKeyPoints: true,
         caption: '扫把：上手作支点 O，下手是动力作用点，扫把头与地面接触处是阻力作用点。',
-      });
-    },
-    door(t) {
-      const x = 80;
-      const y = 70;
-      const w = 640;
-      const h = w * (526 / 1072);
-      const P = (u, v) => K.v(x + u * w, y + v * h);
-      const O = P(0.03, 0.5);
-      const p1 = P(0.16 + t * 0.72, 0.5);
-      const p2 = P(0.5, 0.5);
-      return pack(O, p1, K.v(0, -1), p2, K.v(0, 1), [O, P(0.97, 0.5)], 40, {
-        caption: '推开门（俯视）：铰链是支点，阻力画在门扇中部，不画在门锁',
       });
     },
     opener(t) {
@@ -187,7 +174,7 @@
       const h = w * (natH / natW);
       const P = (u, v) => K.v(x + u * w, y + v * h);
       const O = P(0.255, 0.1);                 // 鼻端压住瓶盖：支点
-      const p2 = P(0.25, 0.23);                // 下唇钩住盖沿：阻力点
+      const p2 = P(0.25, 0.265);               // 下唇钩住盖沿：阻力点（按实物位置下移）
       const u1 = 0.5 + t * 0.32;
       const v1 = 0.3 + (u1 - 0.55) * 0.95;
       const p1 = P(u1, v1);                    // 手柄：动力点
@@ -210,7 +197,7 @@
       const h = w * (217 / 1116);
       const P = (u, v) => K.v(x + u * w, y + v * h);
       const O = P(0.06, 0.28);
-      const tip = P(0.94, 0.42);
+      const tip = P(0.94, 0.79);
       const p1 = P(0.22 + t * 0.35, 0.3 + t * 0.06);
       return pack(O, p1, K.v(0.15, 1), tip, K.v(0, -1), [O, tip], 5, {
         caption: '夹菜：两筷在手中相抵处是支点，手指在中段发力，食物在筷尖',
@@ -352,7 +339,7 @@
       const bar = fit(g, 'assets/life/broom.png', 452, 1101, 300, 36, w);
       const O = bar.p(0.36, 0.04);
       const head = bar.p(0.38, 0.97);
-      const p1 = bar.p(0.36, 0.22 + t * 0.32);
+      const p1 = bar.p(0.405, 0.22 + t * 0.32);
       ground(g, head.y + 6);
       if (step >= 2) tag(g, O, '上手 · 支点 O', 28, 0);
       if (step >= 3) {
@@ -360,13 +347,6 @@
         tag(g, head, '扫把头 · 阻力点', 24, 0);
       }
       axis(g, [O, head], showAxis);
-    } else if (id === 'door') {
-      const w = 640;
-      const bar = fit(g, 'assets/life/door.png', 1072, 526, 80, 70, w);
-      const O = bar.p(0.03, 0.5);
-      tag(g, O, '铰链', -8, -16);
-      tag(g, bar.p(0.5, 0.5), '门中部·阻力', 10, 28);
-      axis(g, [O, bar.p(0.97, 0.5)], showAxis);
     } else if (id === 'opener') {
       const x = 40;
       const y = 24;
@@ -377,7 +357,7 @@
       const u1 = 0.5 + t * 0.32;
       const v1 = 0.3 + (u1 - 0.55) * 0.95;
       const O = bar.p(0.255, 0.1);
-      const p2 = bar.p(0.25, 0.23);
+      const p2 = bar.p(0.25, 0.265);
       const p1 = bar.p(u1, v1);
       if (step >= 2) tag(g, O, '支点 O', 12, -4);
       if (step >= 3) {
@@ -404,10 +384,10 @@
     } else if (id === 'chopsticks') {
       const w = 540;
       const bar = fit(g, 'assets/life/chopsticks.png', 1116, 217, 120, 140, w);
-      const tip = bar.p(0.94, 0.42);
+      const tip = bar.p(0.94, 0.79);
       const p1 = bar.p(0.22 + t * 0.35, 0.3 + t * 0.06);
       S().el('ellipse', {
-        cx: tip.x, cy: tip.y + 10, rx: 14, ry: 8,
+        cx: tip.x - 2, cy: tip.y - 12, rx: 14, ry: 8,
         fill: '#65a30d', stroke: '#3f6212', 'stroke-width': 1,
       }, g);
       axis(g, [bar.p(0.06, 0.28), tip], showAxis);
