@@ -134,16 +134,23 @@
       name: '提起鱼',
       tip: '真实鱼竿 · 开放施力方向',
       practiceType: 'freeSector',
-      sector: { minDeg: -90, maxDeg: 0, label: '水平向右 → 竖直向上' },
-      howO: '竿尾抵腰/后手稳定处作为本模型的支点 O；前手位置作为动力作用点。',
+      pivotGiven: true,
+      sector: { minDeg: -180, maxDeg: -90, label: '水平向人方向 → 竖直向上' },
+      howO: '支点 O 直接给出：后手握住鱼竿末尾的黄色手柄区域，并把这一处作为本模型的支点。',
       stem:
-        '提起鱼：鱼线对竿尖的作用向下，前手负责使鱼竿绕 O 转动。\n' +
-        '请：① 点竿尾支点；② 从前手位置自由选择 F₁（水平向右到竖直向上的 90° 范围）；③ 按自己的 F₁ 画 l₁。',
+        '提起鱼：鱼线对竿尖的作用向下。后手稳定竿尾，前手在前方黄色握把区域施力，使鱼竿向人的方向靠近并抬起。\n' +
+        '本题支点已经给出。请：① 在前方黄色握把区域任选一个前手作用点并拖出 F₁；② 施力方向可在“水平朝向人”到“竖直向上”的 90° 范围内自由选择；③ 按自己的 F₁ 画 l₁。',
       known:
-        '方向合理不等于同样省力。接近沿“支点—前手”连线施力时，动力臂会很小；转向垂直时动力臂增大。',
-      O: { x: 212, y: 242 },
-      bar: [{ x: 212, y: 242 }, { x: 675, y: 242 }],
-      point: { x: 360, y: 242 },
+        '开放题没有唯一动力方向。越接近沿“支点—前手”连线朝人拉，动力臂越小；越接近与该连线垂直，动力臂越大、越省力。',
+      O: { x: 235, y: 242 },
+      bar: [{ x: 200, y: 242 }, { x: 675, y: 242 }],
+      point: { x: 487, y: 242 },
+      pointRange: {
+        a: { x: 448, y: 242 },
+        b: { x: 522, y: 242 },
+        tol: 30,
+        label: '前手可握区域'
+      },
       dir: { x: 0, y: -1 },
       forcePx: 78,
       point2: { x: 675, y: 242 },
@@ -173,10 +180,15 @@
 
   function freshPractice(sc) {
     const given = sc.practiceType === 'given';
+    const pivotGiven = !!sc.pivotGiven;
     return {
-      phase: given ? 'arm1' : 'pivot',
-      clickedO: given ? { ...sc.O } : null,
-      f1: { dir: given ? K.norm(sc.dir) : null, armEnd: null },
+      phase: given ? 'arm1' : (pivotGiven ? 'dir1' : 'pivot'),
+      clickedO: (given || pivotGiven) ? { ...sc.O } : null,
+      f1: {
+        dir: given ? K.norm(sc.dir) : null,
+        armEnd: null,
+        point: sc.pointRange ? null : { ...sc.point },
+      },
       correctionForce: false,
       correctionArm: false,
       showSector: false,
@@ -237,11 +249,29 @@
     }, g);
     addImage(g, 'assets/life/rod.png', x, y, w, h);
 
-    // 前手：只标出握持区域，不暗示施力方向。
-    S.el('ellipse', {
-      cx: sc.point.x, cy: sc.point.y + 1, rx: 19, ry: 11,
-      fill: '#fed7aa', stroke: '#9a3412', 'stroke-width': 1.4, opacity: 0.9,
-    }, g);
+    // 后手/支点：直接给出，不再让学生猜。
+    S.el('text', {
+      x: sc.O.x - 2, y: sc.O.y - 28,
+      fill: '#0f766e', 'font-size': 12, 'font-weight': 800,
+      'text-anchor': 'middle',
+    }, g).textContent = '后手 / 支点 O';
+
+    // 前手可以在前方黄色握把的一段范围内选择作用点。
+    if (sc.pointRange) {
+      const x0 = Math.min(sc.pointRange.a.x, sc.pointRange.b.x);
+      const x1 = Math.max(sc.pointRange.a.x, sc.pointRange.b.x);
+      S.el('rect', {
+        x: x0 - 6, y: sc.point.y - 17,
+        width: (x1 - x0) + 12, height: 34, rx: 12,
+        fill: 'rgba(245,158,11,0.10)', stroke: '#d97706',
+        'stroke-width': 1.5, 'stroke-dasharray': '6 4',
+      }, g);
+      S.el('text', {
+        x: (x0 + x1) / 2, y: sc.point.y - 24,
+        fill: '#9a3412', 'font-size': 11, 'font-weight': 800,
+        'text-anchor': 'middle',
+      }, g).textContent = '前手可握区域';
+    }
 
     const tip = sc.point2;
     S.el('line', {
@@ -313,8 +343,8 @@
 
   function forceAngleDeg(dir) {
     let d = Math.atan2(dir.y, dir.x) * 180 / Math.PI;
-    while (d <= -180) d += 360;
-    while (d > 180) d -= 360;
+    while (d < -180) d += 360;
+    while (d >= 180) d -= 360;
     return d;
   }
 
@@ -332,7 +362,8 @@
   function inOpenSector(dir, sc) {
     if (!sc.sector) return true;
     const a = forceAngleDeg(dir);
-    return a >= sc.sector.minDeg - 1e-6 && a <= sc.sector.maxDeg + 1e-6;
+    return a >= sc.sector.minDeg - FORCE_TOL_DEG &&
+      a <= sc.sector.maxDeg + FORCE_TOL_DEG;
   }
 
   function snapOpenBoundary(dir, sc) {
@@ -359,17 +390,31 @@
       fill: 'rgba(220,38,38,0.10)', stroke: 'rgba(220,38,38,0.55)',
       'stroke-width': 1.5, 'stroke-dasharray': '5 4',
     }, g);
+    const am = (a0 + a1) / 2;
     S.el('text', {
-      x: p.x + 62, y: p.y - 62,
+      x: p.x + r * 0.68 * Math.cos(am),
+      y: p.y + r * 0.68 * Math.sin(am),
       fill: '#b91c1c', 'font-size': 11, 'font-weight': 700,
       'text-anchor': 'middle',
     }, g).textContent = '允许施力范围';
   }
 
-  function drawForceAndLine(g, sc, O, dir, label) {
+  function drawForceAndLine(g, sc, O, dir, label, point) {
     if (!dir) return;
-    S.drawForceArrow(g, sc.point, dir, sc.forcePx || 72, C.F1, label || 'F₁', { O });
-    S.drawForceLine(g, sc.point, dir, 260, C.F1);
+    const p = point || sc.point;
+    S.drawForceArrow(g, p, dir, sc.forcePx || 72, C.F1, label || 'F₁', { O });
+    S.drawForceLine(g, p, dir, 260, C.F1);
+  }
+
+  function practicePoint(sc, pr) {
+    return (pr && pr.f1 && pr.f1.point) || sc.point;
+  }
+
+  function nearestPointOnSegment(p, a, b) {
+    const ab = K.sub(b, a);
+    const den = K.dot(ab, ab) || 1;
+    const t = Math.max(0, Math.min(1, K.dot(K.sub(p, a), ab) / den));
+    return K.add(a, K.scale(ab, t));
   }
 
   function drawCorrectionForce(g, sc) {
@@ -378,8 +423,9 @@
     S.drawForceLine(wrap, sc.point, sc.dir, 250, C.F1);
   }
 
-  function drawCorrectionArm(g, sc, O, dir) {
-    const truth = K.forceArm(O, sc.point, dir);
+  function drawCorrectionArm(g, sc, O, dir, point) {
+    const p = point || sc.point;
+    const truth = K.forceArm(O, p, dir);
     const wrap = S.el('g', { opacity: 0.72 }, g);
     S.drawArm(wrap, O, truth.foot, '正确 l₁', false, C.arm1, dir);
     if (truth.armLen > 5) S.drawRightAngle(wrap, truth.foot, truth.armVec, truth.dir, 9, C.arm1);
@@ -441,9 +487,10 @@
   function renderPractice(L, sc) {
     const pr = state.practice;
     const O = pr.clickedO || sc.O;
+    const p1 = practicePoint(sc, pr);
 
-    // 作用点是题目条件的一部分；开放题不提前给唯一方向。
-    drawLabeledPoint(L.draw, sc.point, C.F1);
+    // 支点已给的情境（鱼竿）直接显示 O；前手作用点允许在给定握把区域选择。
+    if (p1) drawLabeledPoint(L.draw, p1, C.F1);
     if (sc.point2) drawLabeledPoint(L.draw, sc.point2, C.F2);
 
     if (pr.phase === 'pivot' && !pr.clickedO) drawPivotFindHint(L.ui, sc);
@@ -455,9 +502,9 @@
     }
 
     if (sc.practiceType === 'given') {
-      drawForceAndLine(L.draw, sc, O, sc.dir, '已知 F₁');
-    } else if (pr.f1.dir) {
-      drawForceAndLine(L.draw, sc, O, pr.f1.dir, 'F₁');
+      drawForceAndLine(L.draw, sc, O, sc.dir, '已知 F₁', p1);
+    } else if (pr.f1.dir && p1) {
+      drawForceAndLine(L.draw, sc, O, pr.f1.dir, 'F₁', p1);
     }
 
     if (sc.practiceType === 'freeSector' && pr.showSector) drawAllowedSector(L.ui, sc);
@@ -471,13 +518,13 @@
       }, L.draw);
     }
 
-    if (pr.correctionArm && pr.f1.dir && pr.clickedO) {
-      drawCorrectionArm(L.ui, sc, pr.clickedO, pr.f1.dir);
+    if (pr.correctionArm && pr.f1.dir && pr.clickedO && p1) {
+      drawCorrectionArm(L.ui, sc, pr.clickedO, pr.f1.dir, p1);
     }
 
     if (pr.phase === 'done' && pr.f1.armEnd && pr.clickedO && pr.f1.dir) {
       // 完成后只保留“学生自己的、已规范化”的作图；不再叠加标准答案。
-      const t = K.forceArm(pr.clickedO, sc.point, pr.f1.dir);
+      const t = K.forceArm(pr.clickedO, p1, pr.f1.dir);
       S.drawArm(L.draw, pr.clickedO, t.foot, 'l₁', false, C.arm1, pr.f1.dir);
       if (t.armLen > 5) S.drawRightAngle(L.draw, t.foot, t.armVec, t.dir, 9, C.arm1);
     }
@@ -499,6 +546,11 @@
       return '② 完成';
     }
     if (p === 'pivot') return '① 点出支点 O';
+    if (sc.pivotGiven) {
+      if (p === 'dir1') return '① 在前方黄色握把选点并画 F₁';
+      if (p === 'arm1') return '② 按当前 F₁ 画动力臂 l₁';
+      return '③ 完成';
+    }
     if (p === 'dir1') return sc.practiceType === 'freeSector' ? '② 自定动力方向 F₁' : '② 画动力 F₁';
     if (p === 'arm1') return '③ 按当前 F₁ 画动力臂 l₁';
     return '④ 完成';
@@ -541,13 +593,17 @@
             : '学生练习 · 容错作图';
       }
       if (stepEl) stepEl.textContent = practicePhaseLabel();
-      if (body) body.textContent = '【怎样找支点】' + sc.howO + '\n\n' + sc.stem;
+      if (body) {
+        body.textContent = (sc.pivotGiven ? '【支点已给出】' : '【怎样找支点】') +
+          sc.howO + '\n\n' + sc.stem;
+      }
       if (known) known.textContent = sc.known;
 
-      if (sc.practiceType === 'freeSector' && pr.f1.dir) {
+      if (sc.practiceType === 'freeSector' && pr.f1.dir && practicePoint(sc, pr)) {
         const O = pr.clickedO || sc.O;
-        const arm = K.forceArm(O, sc.point, pr.f1.dir).armLen;
-        const r = K.dist(O, sc.point);
+        const P = practicePoint(sc, pr);
+        const arm = K.forceArm(O, P, pr.f1.dir).armLen;
+        const r = K.dist(O, P);
         const factor = arm < 2 ? Infinity : r / arm;
         const eff = r > 0 ? Math.min(100, 100 * arm / r) : 0;
         const a = Math.abs(forceAngleDeg(pr.f1.dir));
@@ -671,12 +727,21 @@
     }
 
     if (pr.phase === 'dir1') {
-      if (K.dist(p, sc.point) > 42) {
+      let fp = sc.point;
+      if (sc.pointRange) {
+        const nearest = nearestPointOnSegment(p, sc.pointRange.a, sc.pointRange.b);
+        if (K.dist(p, nearest) > (sc.pointRange.tol || 30)) {
+          setJudge('请从鱼竿前方黄色握把区域按下，再向人的方向/向上拖出 F₁。', false);
+          return;
+        }
+        pr.f1.point = nearest;
+        fp = nearest;
+      } else if (K.dist(p, sc.point) > 42) {
         setJudge('请从红色动力作用点按下，再拖出力的方向。', false);
         return;
       }
       state.dragging = 'practiceDir1';
-      pr.f1.dir = K.norm(K.sub(p, sc.point));
+      pr.f1.dir = null;
       if (sc.practiceType === 'freeSector') pr.showSector = false;
       render();
       return;
@@ -702,7 +767,9 @@
     else if (state.dragging === 'point') state.point = p;
     else if (state.dragging === 'dir') state.dir = K.norm(K.sub(p, state.point));
     else if (state.dragging === 'practiceDir1') {
-      state.practice.f1.dir = K.norm(K.sub(p, sc.point));
+      const fp = practicePoint(sc, state.practice);
+      const dv = K.sub(p, fp);
+      if (K.len(dv) > 6) state.practice.f1.dir = K.norm(dv);
     } else if (state.dragging === 'practiceArm1') {
       state.practice.f1.armEnd = p;
     }
@@ -739,7 +806,7 @@
           pr.f1.dir = snapOpenBoundary(pr.f1.dir, sc);
           pr.phase = 'arm1';
           pr.showSector = false;
-          const arm = K.forceArm(pr.clickedO || sc.O, sc.point, pr.f1.dir).armLen;
+          const arm = K.forceArm(pr.clickedO || sc.O, practicePoint(sc, pr), pr.f1.dir).armLen;
           if (arm < 4) {
             pr.phase = 'done';
             pr.f1.armEnd = { ...(pr.clickedO || sc.O) };
@@ -756,7 +823,7 @@
     }
 
     if (state.dragging === 'practiceArm1' && pr.f1.armEnd && pr.clickedO && pr.f1.dir) {
-      const r = judgeArm(pr.clickedO, sc.point, pr.f1.dir, pr.f1.armEnd);
+      const r = judgeArm(pr.clickedO, practicePoint(sc, pr), pr.f1.dir, pr.f1.armEnd);
       if (r.ok) {
         // 自动吸附到精确垂足。最终看到的是自己的作图意图被规范化，而不是再叠一份标准答案。
         pr.f1.armEnd = { ...r.truth.foot };
@@ -823,7 +890,9 @@
         sc.practiceType === 'given'
           ? '本题的力已经给出。请直接从 O 画对应的动力臂。'
           : sc.practiceType === 'freeSector'
-            ? '这是开放施力题：先找 O，再自己选择合理的 F₁，程序不会用唯一标准方向替换你的判断。'
+            ? (sc.pivotGiven
+              ? '支点 O 已直接给出。请在前方黄色握把区域选择前手位置，再把 F₁ 朝人的方向到竖直向上的 90° 范围内拖出。'
+              : '这是开放施力题：先找 O，再自己选择合理的 F₁，程序不会用唯一标准方向替换你的判断。')
             : '请按题意作图。方向误差在 ±' + FORCE_TOL_DEG + '° 内会自动吸附为规范方向。',
         null
       );
