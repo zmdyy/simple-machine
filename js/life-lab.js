@@ -768,7 +768,9 @@
         state.clickedO = p;
         const pivotTol = ex().pivotTol || 32;
         if (K.dist(p, g.O) < pivotTol) {
-          setJudge('支点正确。下一步：从红色动力作用点拖出 F₁ 的方向。', true);
+          // 容许人手点选误差；判定正确后吸附到该情境的真实支点，避免后续力臂被鼠标误差带偏。
+          state.clickedO = { x: g.O.x, y: g.O.y };
+          setJudge('支点正确。已吸附到真实支点 O；下一步从红色动力作用点拖出 F₁ 的方向。', true);
           state.practicePhase = 'dir';
         } else if (K.dist(p, g.p1) < 24 || K.dist(p, g.p2) < 24) {
           setJudge('作用点在杠杆上，但这里要先点支点 O。', false);
