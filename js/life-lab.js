@@ -304,10 +304,20 @@
     return EXAMPLES[state.idx];
   }
 
+  function sceneGeom(example, t) {
+    if (global.LifeScenes) {
+      try {
+        const g = LifeScenes.layout(example.id, t);
+        if (g) return g;
+      } catch (err) {
+        console.error('[LifeLab] LifeScenes.layout failed:', example.id, err);
+      }
+    }
+    return example.getGeom(t);
+  }
+
   function geom() {
-    const g = global.LifeScenes
-      ? LifeScenes.layout(ex().id, state.t)
-      : ex().getGeom(state.t);
+    const g = sceneGeom(ex(), state.t);
     if (state.perpMode) {
       // 力改为垂直于杆
       const barDir = K.norm(K.sub(g.bar[g.bar.length - 1], g.bar[0]));
@@ -333,7 +343,7 @@
   function renderList() {
     const box = document.getElementById('lifeList');
     box.innerHTML = EXAMPLES.map((e, i) => {
-      const g = global.LifeScenes ? LifeScenes.layout(e.id, 0.5) : e.getGeom(0.5);
+      const g = sceneGeom(e, 0.5);
       const a1 = K.forceArm(g.O, g.p1, g.d1);
       const a2 = K.forceArm(g.O, g.p2, g.d2);
       const cls = K.classifyLever(a1.armLen, a2.armLen);
@@ -415,9 +425,7 @@
         }
       }
       if (state.tPrev != null && step >= 8) {
-        const gOld = global.LifeScenes
-          ? LifeScenes.layout(ex().id, state.tPrev)
-          : ex().getGeom(state.tPrev);
+        const gOld = sceneGeom(ex(), state.tPrev);
         if (gOld) {
           const aOld = K.forceArm(gOld.O, gOld.p1, gOld.d1);
           S.drawArm(Lui, gOld.O, aOld.foot, null, true);
