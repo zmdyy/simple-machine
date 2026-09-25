@@ -340,12 +340,6 @@
         fill: '#a8a29e', opacity: 0.7,
       }, gLayer);
     }
-    if (id === 'door') {
-      S.el('rect', {
-        x: g.O.x, y: g.O.y - 70, width: 480, height: 140, rx: 4,
-        fill: '#fde68a', opacity: 0.35, stroke: '#d97706',
-      }, gLayer);
-    }
     if (id === 'rod') {
       S.el('text', { x: g.p2.x - 10, y: g.p2.y + 28, 'font-size': 20 }, gLayer).textContent = '🐟';
     }
