@@ -270,8 +270,10 @@
     }, layer);
 
     // 把真实人体上得到的 O / P₁ / P₂ 原位置保留下来，只去掉解剖细节。
+    // 杠杆主体延伸到离 O 更远的作用点：举哑铃是阻力端，踮脚则是跟腱动力端。
+    const leverEnd = K.dist(g.O, g.p1) > K.dist(g.O, g.p2) ? g.p1 : g.p2;
     S.el('line', {
-      x1: g.O.x, y1: g.O.y, x2: g.p2.x, y2: g.p2.y,
+      x1: g.O.x, y1: g.O.y, x2: leverEnd.x, y2: leverEnd.y,
       stroke: '#475569', 'stroke-width': 10, 'stroke-linecap': 'round', opacity: 0.88,
     }, layer);
     S.el('circle', { cx: g.p1.x, cy: g.p1.y, r: 6, fill: C.F1 }, layer);
@@ -338,9 +340,11 @@
       S.drawPivot(Ldraw, g.O);
       if (e.id === 'curl' || e.id === 'calf') {
         S.el('text', {
-          x: g.O.x + 34, y: g.O.y - 28,
+          x: e.id === 'calf' ? g.O.x - 28 : g.O.x + 34,
+          y: e.id === 'calf' ? g.O.y - 22 : g.O.y - 28,
           fill: '#111827', 'font-size': 15, 'font-weight': 800,
           stroke: '#fff', 'stroke-width': 4, 'paint-order': 'stroke',
+          'text-anchor': e.id === 'calf' ? 'end' : 'start',
         }, Ldraw).textContent = e.id === 'curl' ? '肘关节 O' : '前脚掌 O';
       }
     }
@@ -349,8 +353,8 @@
       const px1 = 46 + Math.min(92, Math.sqrt(Math.max(g.f1, 1)) * 4.2);
       S.drawForceArrow(
         Ldraw, g.p1, g.d1, px1, C.F1,
-        'F₁≈' + g.f1.toFixed(0) + ' N',
-        { O: g.O, scale: 1.05, labelOffset: 68 }
+        e.id === 'calf' ? 'F₁' : ('F₁≈' + g.f1.toFixed(0) + ' N'),
+        { O: g.O, scale: 1.05, labelOffset: e.id === 'calf' ? 82 : 68 }
       );
       if (e.id === 'curl' || e.id === 'calf') {
         S.el('circle', {
@@ -358,7 +362,8 @@
           fill: C.F1, stroke: '#fff', 'stroke-width': 2,
         }, Ldraw);
         S.el('text', {
-          x: g.p1.x + 12, y: g.p1.y + 18,
+          x: e.id === 'calf' ? g.p1.x + 18 : g.p1.x + 12,
+          y: e.id === 'calf' ? g.p1.y + 30 : g.p1.y + 18,
           fill: C.F1, 'font-size': 13, 'font-weight': 800,
           stroke: '#fff', 'stroke-width': 4, 'paint-order': 'stroke',
         }, Ldraw).textContent = e.id === 'curl' ? '动力点' : '跟腱动力点';
@@ -369,8 +374,8 @@
       const px2 = 72;
       S.drawForceArrow(
         Ldraw, g.p2, g.d2, px2, C.F2,
-        'F₂=' + g.f2 + ' N',
-        { O: g.O, labelOffset: 62 }
+        e.id === 'calf' ? 'F₂' : ('F₂=' + g.f2 + ' N'),
+        { O: g.O, labelOffset: e.id === 'calf' ? 78 : 62 }
       );
       drawDumbbell(Ldraw, g.p2);
       if (e.id === 'curl' || e.id === 'calf') {
@@ -379,9 +384,11 @@
           fill: C.F2, stroke: '#fff', 'stroke-width': 2,
         }, Ldraw);
         S.el('text', {
-          x: g.p2.x + 16, y: g.p2.y - 14,
+          x: e.id === 'calf' ? g.p2.x - 24 : g.p2.x + 16,
+          y: e.id === 'calf' ? g.p2.y - 24 : g.p2.y - 14,
           fill: C.F2, 'font-size': 13, 'font-weight': 800,
           stroke: '#fff', 'stroke-width': 4, 'paint-order': 'stroke',
+          'text-anchor': e.id === 'calf' ? 'end' : 'start',
         }, Ldraw).textContent = e.id === 'curl' ? '阻力点' : '重力作用点';
       }
     }
