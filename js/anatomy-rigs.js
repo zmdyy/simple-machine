@@ -60,6 +60,8 @@
       id: 'curl',
       label: '举哑铃（肘）',
       singleSide: true,
+      sideSign: 1,
+      hideUnfocusedOther: true,
       camera: {
         position: [1.28, 0.12, 0.50],
         target: [0.32, 0.02, 0],
@@ -67,7 +69,7 @@
         fitPadding: 1.22,
         minDistance: 0.38,
       },
-      dimOpacity: 0.045,
+      dimOpacity: 0.018,
       teaching: {
         joint: '肘关节',
         bones: '肱骨、尺骨、桡骨、手部骨骼',
