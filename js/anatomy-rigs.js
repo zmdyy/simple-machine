@@ -59,7 +59,16 @@
     curl: {
       id: 'curl',
       label: '举哑铃（肘）',
-      camera: { position: [1.4, 0.15, 0.55], target: [0.35, 0.05, 0], fov: 40 },
+      camera: { position: [1.28, 0.12, 0.50], target: [0.32, 0.02, 0], fov: 38 },
+      dimOpacity: 0.045,
+      teaching: {
+        joint: '肘关节',
+        bones: '肱骨、尺骨、桡骨、手部骨骼',
+        muscles: '肱二头肌、肱肌（主要示意）',
+        effort: '肱二头肌经肌腱牵拉桡骨，形成动力 F₁',
+        load: '手持约 5 kg 哑铃，重力约 50 N（示意值）',
+        note: '简化模型忽略前臂和手自身重力，只突出肘关节、肌肉拉力与哑铃重力。',
+      },
       focusPatterns: [
         /humerus/i, /radius/i, /ulna/i, /biceps brachii/i, /brachialis/i,
         /metacarpal/i, /scapula/i, /forearm/i,
@@ -84,7 +93,7 @@
           d1: ctx.dir(insert, belly),
           p2: grip,
           d2: ctx.v(0, -1, 0),
-          f2: 80,
+          f2: 50,
           bar: [O, grip],
         };
       },
