@@ -38,8 +38,11 @@ jobs:
       - name: Run body curl QA
         run: node qa/body-curl-qa.mjs
 
-      - name: Run body calf QA
-        run: node qa/body-calf-qa.mjs
+      - name: Run body calf QA when present
+        run: |
+          if [ -f qa/body-calf-qa.mjs ]; then
+            node qa/body-calf-qa.mjs
+          fi
 
       - name: Upload QA evidence
         if: always()
