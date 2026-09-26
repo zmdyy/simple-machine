@@ -289,6 +289,10 @@ function applyFocusDim() {
     }
     const inFocus = sideOk && focus && (R().matchAny(name, focus) || R().matchAny(detail, focus));
     const hi = sideOk && hiMus && (R().matchAny(name, hiMus) || R().matchAny(detail, hiMus));
+    if (rig && rig.hideUnfocused && !inFocus) {
+      m.visible = false;
+      return;
+    }
     if (rig && rig.hideUnfocusedOther && type === 'other' && !inFocus) {
       m.visible = false;
       return;
@@ -374,7 +378,7 @@ function flyToAction(actionId) {
     );
     controls.target.copy(center);
     camera.position.copy(center).add(viewDir.multiplyScalar(distance));
-    controls.minDistance = Math.max(0.25, distance * 0.42);
+    controls.minDistance = Math.max(0.22, distance * 0.38);
     controls.maxDistance = Math.max(2.5, distance * 4.5);
   } else {
     const p = rig.camera.position;
@@ -385,6 +389,18 @@ function flyToAction(actionId) {
 
   camera.fov = fov;
   camera.updateProjectionMatrix();
+  controls.update();
+}
+
+function trackActionFocus(actionId) {
+  const rig = R().RIGS[actionId];
+  if (!rig || !rig.trackFocus || !camera || !controls) return;
+  const box = focusBounds(rig);
+  if (!box) return;
+  const center = box.getCenter(new THREE.Vector3());
+  const delta = center.clone().sub(controls.target);
+  controls.target.copy(center);
+  camera.position.add(delta);
   controls.update();
 }
 
@@ -765,6 +781,7 @@ function setAction(actionId, t) {
   if (changed || !pivots[actionId]) buildPivotFor(actionId);
   setPose(actionId, state.t);
   if (changed) flyToAction(actionId);
+  else trackActionFocus(actionId);
   applyExplode(state.explode);
   setStepReveal(state.step, state.practice);
 }
