@@ -258,7 +258,7 @@ function applyFocusDim() {
     const mat = m.userData.baseMat || m.material;
     if (!mat || !mat.color) return;
 
-    let opacity = MAT.dim;
+    let opacity = rig && rig.dimOpacity != null ? rig.dimOpacity : MAT.dim;
     const name = m.name || '';
     const detail = (m.userData && (m.userData.nameDetail || m.userData.name)) || '';
     const inFocus = focus && (R().matchAny(name, focus) || R().matchAny(detail, focus));
@@ -329,15 +329,23 @@ function worldToSvg(v3) {
   };
 }
 
-function dirToSvg(dir3) {
-  // 世界方向 → 屏坐标增量（y 向下）
-  const o = new THREE.Vector3(0, 0, 0);
-  const a = worldToSvg(o);
-  const b = worldToSvg(o.clone().add(dir3.clone().normalize()));
+function dirToSvgAt(from3, dir3) {
+  // 在真实作用点处投影方向，避免透视相机下“从世界原点投影”造成方向误差。
+  const d = dir3.clone().normalize();
+  const a = worldToSvg(from3);
+  const b = worldToSvg(from3.clone().add(d.clone().multiplyScalar(0.16)));
   let dx = b.x - a.x;
   let dy = b.y - a.y;
   const len = Math.hypot(dx, dy) || 1;
   return { x: dx / len, y: dy / len };
+}
+
+function forceArm3D(O, p, dir) {
+  const d = dir.clone().normalize();
+  const r = p.clone().sub(O);
+  const armVec = r.clone().sub(d.clone().multiplyScalar(r.dot(d)));
+  const foot = O.clone().add(armVec);
+  return { foot, armVec, armLen: armVec.length(), dir: d };
 }
 
 function getLandmarks() {
@@ -345,26 +353,36 @@ function getLandmarks() {
   if (!rig || !state.ready) return null;
   const ctx = makeCtx(state.t);
   const L = rig.landmarks(ctx);
+  const loadDir = (L.d2 || new THREE.Vector3(0, -1, 0)).clone().normalize();
+
+  // 先在三维世界坐标里完成物理计算，再投影到屏幕。
+  // 因此旋转观察相机不会改变 l₁、l₂ 或 F₁/F₂。
+  const a1w = forceArm3D(L.O, L.p1, L.d1);
+  const a2w = forceArm3D(L.O, L.p2, loadDir);
+
   const O = worldToSvg(L.O);
   const p1 = worldToSvg(L.p1);
   const p2 = worldToSvg(L.p2);
-  const d1 = dirToSvg(L.d1);
-  const d2 = dirToSvg(L.d2);
-  // 重力在世界向下 → SVG y+
-  const g = dirToSvg(new THREE.Vector3(0, -1, 0));
+  const f1 = worldToSvg(a1w.foot);
+  const f2 = worldToSvg(a2w.foot);
+  const d1 = dirToSvgAt(L.p1, L.d1);
+  const d2 = dirToSvgAt(L.p2, loadDir);
+
   return {
     O: { x: O.x, y: O.y },
     p1: { x: p1.x, y: p1.y },
     p2: { x: p2.x, y: p2.y },
     d1,
-    d2: { x: g.x, y: Math.abs(g.y) > 0.2 ? (g.y > 0 ? 1 : -1) : 1 },
+    d2,
     f2: L.f2,
+    a1: { foot: { x: f1.x, y: f1.y }, armLen: a1w.armLen },
+    a2: { foot: { x: f2.x, y: f2.y }, armLen: a2w.armLen },
     bar: (L.bar || []).map((p) => {
       const s = worldToSvg(p);
       return { x: s.x, y: s.y };
     }),
     stageName: L.stageName,
-    world: L,
+    world: Object.assign({}, L, { a1: a1w, a2: a2w, d2: loadDir }),
   };
 }
 
@@ -427,30 +445,17 @@ function drawOverlay3D() {
   }
   if (ov.showF) {
     addArrow(W.p1, W.d1, 0.14, 0xdc2626);
-    addArrow(W.p2, new THREE.Vector3(0, -1, 0), 0.14, 0x2563eb);
+    addArrow(W.p2, W.d2 || new THREE.Vector3(0, -1, 0), 0.14, 0x2563eb);
   }
-  if (ov.showArm && K()) {
-    const a1 = K().forceArm(
-      { x: L.O.x, y: L.O.y },
-      { x: L.p1.x, y: L.p1.y },
-      L.d1
-    );
-    // 3D 近似：从 O 向力线作垂足用世界向量
-    const d1 = W.d1.clone().normalize();
-    const r1 = W.p1.clone().sub(W.O);
-    const foot1 = W.O.clone().add(r1.clone().sub(d1.clone().multiplyScalar(r1.dot(d1))));
-    const geo1 = new THREE.BufferGeometry().setFromPoints([W.O, foot1]);
+  if (ov.showArm && W.a1 && W.a2) {
+    const geo1 = new THREE.BufferGeometry().setFromPoints([W.O, W.a1.foot]);
     overlayGroup.add(
       new THREE.Line(geo1, new THREE.LineBasicMaterial({ color: 0xdc2626, depthTest: false }))
     );
-    const d2 = new THREE.Vector3(0, -1, 0);
-    const r2 = W.p2.clone().sub(W.O);
-    const foot2 = W.O.clone().add(r2.clone().sub(d2.clone().multiplyScalar(r2.dot(d2))));
-    const geo2 = new THREE.BufferGeometry().setFromPoints([W.O, foot2]);
+    const geo2 = new THREE.BufferGeometry().setFromPoints([W.O, W.a2.foot]);
     overlayGroup.add(
       new THREE.Line(geo2, new THREE.LineBasicMaterial({ color: 0x2563eb, depthTest: false }))
     );
-    void a1;
   }
 }
 
