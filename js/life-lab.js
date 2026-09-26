@@ -227,53 +227,32 @@
     {
       id: 'nailclipper',
       name: '指甲剪',
-      action: '分析：依次看压柄、上刀口、下刀口三个杠杆',
-      whyO: '按结构图分为三个杠杆：压柄以圆柱销为支点；上、下刀口均以尾部连接处为支点。',
+      action: '分析：按压指甲剪',
+      whyO: '压柄前端与剪体的支承接触处 → 支点 O；O 与阻力点 B 很近，但不是同一点。',
       view: '侧视实物',
-      paramLabel: '当前杠杆（左=压柄，中=上刀口，右=下刀口）',
-      stages: true,
-      defaultT: 0.15,
+      paramLabel: '手按压的位置',
+      defaultT: 1,
+      pivotTol: 38,
       getGeom(t) {
         const P = (u, v) => K.v(172 + u * 456, 12 + v * 456 * (826 / 942));
-
-        if (t < 1 / 3) {
-          const O = P(0.150, 0.672);
-          const hand = P(0.732, 0.195);
-          const load = P(0.108, 0.610);
-          return {
-            O, bar: [load, O, hand],
-            p1: hand, d1: K.v(0, 1),
-            p2: load, d2: K.v(0, 1),
-            f2: 20,
-            decor: 'clipper1',
-            stageName: '① 压柄：第一类杠杆（省力）',
-          };
-        }
-
-        if (t < 2 / 3) {
-          const O = P(0.897, 0.521);
-          const input = P(0.403, 0.593);
-          const tip = P(0.048, 0.751);
-          return {
-            O, bar: [tip, input, O],
-            p1: input, d1: K.v(0, 1),
-            p2: tip, d2: K.v(0, -1),
-            f2: 35,
-            decor: 'clipper2',
-            stageName: '② 上刀口：第三类杠杆（费力）',
-          };
-        }
-
-        const O = P(0.897, 0.521);
-        const input = P(0.424, 0.714);
-        const tip = P(0.053, 0.823);
+        const O = P(0.18610, 0.76313);
+        const A = P(0.76955, 0.09543);
+        const B = P(0.15204, 0.71721);
+        const near = P(0.400, 0.500);
+        const tt = Math.max(0, Math.min(1, t == null ? 1 : t));
+        const hand = K.v(
+          near.x + (A.x - near.x) * tt,
+          near.y + (A.y - near.y) * tt
+        );
         return {
-          O, bar: [tip, input, O],
-          p1: input, d1: K.v(0, -1),
-          p2: tip, d2: K.v(0, 1),
-          f2: 35,
-          decor: 'clipper3',
-          stageName: '③ 下刀口：第三类杠杆（费力）',
+          O,
+          bar: [B, O, hand],
+          p1: hand,
+          d1: K.v(0, 1),
+          p2: B,
+          d2: K.v(0, 1),
+          f2: 20,
+          decor: 'nailclipper',
         };
       },
     },
@@ -703,6 +682,8 @@
         setJudge('先只看真实开瓶器。重点观察：支点不是瓶子中心，而是开瓶器鼻端压住瓶盖的接触点。', null);
       } else if (ex().id === 'wheelbarrow') {
         setJudge('先只看真实小推车。下一步先标轮轴支点，再揭示把手动力点和货物阻力点。', null);
+      } else if (ex().id === 'nailclipper') {
+        setJudge('先只看真实指甲剪。下一步先找支点 O；注意 O 与阻力作用点 B 很近，但不是同一点。', null);
       } else {
         setJudge('', null);
       }
