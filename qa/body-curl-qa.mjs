@@ -96,6 +96,8 @@ try {
   await page.waitForTimeout(700);
   await setT(0.80);
   const afterSwitch = await page.evaluate(() => window.Body3D.debugSnapshot());
+  fs.writeFileSync(OUT + '/switch-before.json', JSON.stringify(beforeSwitch, null, 2));
+  fs.writeFileSync(OUT + '/switch-after.json', JSON.stringify(afterSwitch, null, 2));
   assert(closeVec(beforeSwitch.movableCenter, afterSwitch.movableCenter, 2e-4),
     'curl -> calf -> curl changed movable center; possible pose bake/drift');
   assert(closeVec(beforeSwitch.movableSize, afterSwitch.movableSize, 2e-4),
