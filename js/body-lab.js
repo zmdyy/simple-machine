@@ -245,16 +245,26 @@
   function drawAbstractModel(layer, g) {
     S.el('rect', {
       x: 24, y: 20, width: 752, height: 372, rx: 18,
-      fill: 'rgba(255,255,255,0.80)', stroke: '#cbd5e1', 'stroke-width': 1.2,
+      fill: 'rgba(255,255,255,0.88)', stroke: '#cbd5e1', 'stroke-width': 1.2,
     }, layer);
-    if (g.bar && g.bar.length >= 2) {
-      const a = g.O;
-      const b = g.p2;
-      S.el('line', {
-        x1: a.x, y1: a.y, x2: b.x, y2: b.y,
-        stroke: '#475569', 'stroke-width': 10, 'stroke-linecap': 'round', opacity: 0.82,
-      }, layer);
-    }
+
+    // 把真实人体上得到的 O / P₁ / P₂ 原位置保留下来，只去掉解剖细节。
+    S.el('line', {
+      x1: g.O.x, y1: g.O.y, x2: g.p2.x, y2: g.p2.y,
+      stroke: '#475569', 'stroke-width': 10, 'stroke-linecap': 'round', opacity: 0.88,
+    }, layer);
+    S.el('circle', { cx: g.p1.x, cy: g.p1.y, r: 6, fill: C.F1 }, layer);
+    S.el('circle', { cx: g.p2.x, cy: g.p2.y, r: 6, fill: C.F2 }, layer);
+    S.drawPivot(layer, g.O);
+
+    const px1 = 52 + Math.min(96, Math.sqrt(Math.max(g.f1, 1)) * 4.0);
+    S.drawForceArrow(layer, g.p1, g.d1, px1, C.F1, 'F₁', { O: g.O, scale: 1.08 });
+    S.drawForceArrow(layer, g.p2, g.d2, 72, C.F2, 'F₂', { O: g.O });
+    S.drawForceLine(layer, g.p1, g.d1, 190);
+    S.drawForceLine(layer, g.p2, g.d2, 190);
+    S.drawArm(layer, g.O, g.a1.foot, 'l₁', false, C.arm1, g.d1);
+    S.drawArm(layer, g.O, g.a2.foot, 'l₂', false, C.arm2, g.d2);
+
     S.el('text', {
       x: 44, y: 52, fill: '#0f766e', 'font-size': 20, 'font-weight': 800,
     }, layer).textContent = '从人体结构抽象成杠杆';
