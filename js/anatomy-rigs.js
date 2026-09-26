@@ -51,7 +51,7 @@
       ],
       pivotFrom: [
         /head of first metatarsal/i, /first metatarsal bone/i,
-        /metatarsal bones/i,
+        /proximal phalanx of .*foot/i,
       ],
       movable: [
         /calcane/i, /talus/i, /navicular/i, /cuboid/i, /cuneiform/i,
@@ -66,7 +66,9 @@
       angleMin: 0.02,
       angleMax: 0.32,
       landmarks(ctx) {
-        const O = ctx.centerOf([/head of first metatarsal/i, /first metatarsal/i, /metatarsal bones/i]) || ctx.pivotWorld;
+        const O = ctx.centerOf([
+          /head of first metatarsal/i, /first metatarsal/i, /proximal phalanx of .*foot/i,
+        ]) || ctx.pivotWorld;
         const heel = ctx.centerOf([/calcaneal tuberosity/i, /calcaneus(?!\.)/i, /calcaneus/i]) ||
           O.clone().add(ctx.v(-0.10, 0.01, -0.04));
         const ankle = ctx.centerOf([/talus(?!\.)/i, /talus/i, /inferior articular surface of tibia/i]) ||
