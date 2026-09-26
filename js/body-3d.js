@@ -104,7 +104,7 @@ function meshCenter(obj) {
   return box.getCenter(new THREE.Vector3());
 }
 
-function findMeshes(patterns, sidePrefer) {
+function findMeshes(patterns, sidePrefer, sideSign) {
   const hit = [];
   for (const m of meshes) {
     const name = m.name || '';
@@ -112,11 +112,24 @@ function findMeshes(patterns, sidePrefer) {
     if (!R().matchAny(name, patterns) && !R().matchAny(detail, patterns)) continue;
     hit.push(m);
   }
-  if (sidePrefer) {
-    const pref = hit.filter((m) => R().preferSide(m.name));
-    if (pref.length) return pref;
+  if (!sidePrefer || hit.length < 2) return hit;
+
+  // 对“单侧动作模板”，优先按模型实际左右空间位置筛选，而不是只依赖 .001 后缀。
+  // 模型已经居中，因此 x 正/负可稳定区分左右侧；curl 明确指定 sideSign=+1。
+  if (sideSign === 1 || sideSign === -1) {
+    const tol = 0.015;
+    const spatial = hit.filter((m) => {
+      const x = meshCenter(m).x;
+      return sideSign > 0 ? x >= -tol : x <= tol;
+    });
+    if (spatial.length) return spatial;
   }
-  return hit;
+
+  const pref = hit.filter((m) => {
+    const detail = (m.userData && (m.userData.nameDetail || m.userData.name)) || '';
+    return R().preferSide(m.name, detail);
+  });
+  return pref.length ? pref : hit;
 }
 
 function centerOfMeshes(list) {
@@ -139,31 +152,37 @@ function makeCtx(t) {
       return to.clone().sub(from).normalize();
     },
     centerOf(patterns) {
-      return centerOfMeshes(findMeshes(patterns, true));
+      const rig = R().RIGS[state.actionId];
+      return centerOfMeshes(findMeshes(patterns, true, rig && rig.sideSign));
     },
   };
 }
 
+function restoreMeshHome(m) {
+  if (!m || !m.userData.restParent) return;
+  // 不保留当前世界姿态，直接恢复 GLB 初始层级和局部变换。
+  // 这样动作切换不会因为 attach/detach 的矩阵换算产生累计漂移。
+  m.userData.restParent.add(m);
+  if (m.userData.restLocal) m.position.copy(m.userData.restLocal);
+  if (m.userData.restQuat) m.quaternion.copy(m.userData.restQuat);
+  if (m.userData.restScale) m.scale.copy(m.userData.restScale);
+  m.updateMatrix();
+}
+
+
 function clearPivots() {
+  meshes.forEach(restoreMeshHome);
+
   Object.keys(pivots).forEach((id) => {
     const p = pivots[id];
-    if (!p) return;
-    while (p.children.length) {
-      const ch = p.children[0];
-      root.attach(ch);
-    }
-    if (p.parent) p.parent.remove(p);
+    if (p && p.parent) p.parent.remove(p);
   });
   pivots = {};
+
   if (kneePivot) {
-    while (kneePivot.children.length) root.attach(kneePivot.children[0]);
     if (kneePivot.parent) kneePivot.parent.remove(kneePivot);
     kneePivot = null;
   }
-  meshes.forEach((m) => {
-    m.userData.homePos = m.position.clone();
-    m.userData.homeQuat = m.quaternion.clone();
-  });
 }
 
 function buildPivotFor(actionId) {
@@ -172,10 +191,10 @@ function buildPivotFor(actionId) {
 
   clearPivots();
 
-  const pivotSources = findMeshes(rig.pivotFrom, true);
+  const pivotSources = findMeshes(rig.pivotFrom, true, rig.sideSign);
   let pivotPos = centerOfMeshes(pivotSources);
   if (!pivotPos) {
-    const focus = findMeshes(rig.focusPatterns, true);
+    const focus = findMeshes(rig.focusPatterns, true, rig.sideSign);
     pivotPos = centerOfMeshes(focus) || new THREE.Vector3();
   }
 
@@ -184,7 +203,9 @@ function buildPivotFor(actionId) {
   pivot.position.copy(pivotPos);
   root.add(pivot);
 
-  const movable = findMeshes(rig.movable, false);
+  // 固定动作模板默认只驱动一侧肢体。BodyParts3D 的另一侧网格常以 .001 等后缀区分。
+  // 之前这里 sidePrefer=false 会把左右两侧前臂同时绑到同一个肘关节，导致另一侧肢体飞离身体。
+  const movable = findMeshes(rig.movable, rig.singleSide !== false, rig.sideSign);
   movable.forEach((m) => {
     // 避免把枢轴骨本身绑进会转的组导致漂移：枢轴参考网格仍可高亮但不强制排除
     pivot.attach(m);
@@ -199,7 +220,7 @@ function buildPivotFor(actionId) {
     kneePivot.name = 'pivot_knee';
     kneePivot.position.copy(kp);
     root.add(kneePivot);
-    findMeshes(rig.kneeMovable, false).forEach((m) => kneePivot.attach(m));
+    findMeshes(rig.kneeMovable, rig.singleSide !== false, rig.sideSign).forEach((m) => kneePivot.attach(m));
   }
 }
 
@@ -261,8 +282,27 @@ function applyFocusDim() {
     let opacity = rig && rig.dimOpacity != null ? rig.dimOpacity : MAT.dim;
     const name = m.name || '';
     const detail = (m.userData && (m.userData.nameDetail || m.userData.name)) || '';
-    const inFocus = focus && (R().matchAny(name, focus) || R().matchAny(detail, focus));
-    const hi = hiMus && (R().matchAny(name, hiMus) || R().matchAny(detail, hiMus));
+    let sideOk = true;
+    if (rig && rig.singleSide !== false && (rig.sideSign === 1 || rig.sideSign === -1)) {
+      const x = meshCenter(m).x;
+      sideOk = rig.sideSign > 0 ? x >= -0.015 : x <= 0.015;
+    } else if (rig && rig.singleSide !== false) {
+      sideOk = R().preferSide(name, detail);
+    }
+    const inFocus = sideOk && focus && (R().matchAny(name, focus) || R().matchAny(detail, focus));
+    const hi = sideOk && hiMus && (R().matchAny(name, hiMus) || R().matchAny(detail, hiMus));
+    if (rig && rig.focusOnlyHighlightedMuscle && type === 'muscle' && !hi) {
+      m.visible = false;
+      return;
+    }
+    if (rig && rig.hideUnfocused && !inFocus) {
+      m.visible = false;
+      return;
+    }
+    if (rig && rig.hideUnfocusedOther && type === 'other' && !inFocus) {
+      m.visible = false;
+      return;
+    }
     if (inFocus) opacity = MAT.focus;
     if (hi) {
       opacity = 1;
@@ -295,25 +335,82 @@ function applyExplode(amount) {
 function storeRestPose() {
   const origin = new THREE.Vector3();
   meshes.forEach((m) => {
+    m.userData.restParent = m.parent;
     m.userData.restLocal = m.position.clone();
-    const c = meshCenter(m);
-    const dir = c.clone().sub(origin);
+    m.userData.restQuat = m.quaternion.clone();
+    m.userData.restScale = m.scale.clone();
+
+    const center = meshCenter(m);
+    const dir = center.clone().sub(origin);
     if (dir.lengthSq() < 1e-6) dir.set(0, 1, 0);
     else dir.normalize();
     m.userData.explodeDir = dir;
-    m.userData.restWorld = c;
+    m.userData.restWorld = center.clone();
   });
+}
+
+function actionFocusMeshes(rig) {
+  if (!rig || !rig.focusPatterns) return [];
+  return findMeshes(rig.focusPatterns, rig.singleSide !== false, rig.sideSign);
+}
+
+function focusBounds(rig) {
+  const list = actionFocusMeshes(rig);
+  if (!list.length) return null;
+  const box = new THREE.Box3();
+  list.forEach((m) => {
+    m.updateWorldMatrix(true, false);
+    box.expandByObject(m);
+  });
+  return box.isEmpty() ? null : box;
 }
 
 function flyToAction(actionId) {
   const rig = R().RIGS[actionId];
   if (!rig || !camera || !controls) return;
-  const p = rig.camera.position;
-  const t = rig.camera.target;
-  camera.position.set(p[0], p[1], p[2]);
-  controls.target.set(t[0], t[1], t[2]);
-  camera.fov = rig.camera.fov || 42;
+
+  const fov = (rig.camera && rig.camera.fov) || 42;
+  const box = focusBounds(rig);
+  if (box) {
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    const radius = Math.max(size.x, size.y, size.z) * 0.5;
+    const refPos = new THREE.Vector3(...rig.camera.position);
+    const refTarget = new THREE.Vector3(...rig.camera.target);
+    let viewDir = refPos.sub(refTarget);
+    if (viewDir.lengthSq() < 1e-6) viewDir.set(1, 0.15, 0.45);
+    viewDir.normalize();
+
+    const fovRad = THREE.MathUtils.degToRad(fov);
+    const distance = Math.max(
+      rig.camera.minDistance || 0.42,
+      (radius / Math.max(Math.tan(fovRad / 2), 0.2)) * (rig.camera.fitPadding || 1.35)
+    );
+    controls.target.copy(center);
+    camera.position.copy(center).add(viewDir.multiplyScalar(distance));
+    controls.minDistance = Math.max(0.22, distance * 0.38);
+    controls.maxDistance = Math.max(2.5, distance * 4.5);
+  } else {
+    const p = rig.camera.position;
+    const t = rig.camera.target;
+    camera.position.set(p[0], p[1], p[2]);
+    controls.target.set(t[0], t[1], t[2]);
+  }
+
+  camera.fov = fov;
   camera.updateProjectionMatrix();
+  controls.update();
+}
+
+function trackActionFocus(actionId) {
+  const rig = R().RIGS[actionId];
+  if (!rig || !rig.trackFocus || !camera || !controls) return;
+  const box = focusBounds(rig);
+  if (!box) return;
+  const center = box.getCenter(new THREE.Vector3());
+  const delta = center.clone().sub(controls.target);
+  controls.target.copy(center);
+  camera.position.add(delta);
   controls.update();
 }
 
@@ -692,10 +789,52 @@ function setAction(actionId, t) {
   state.t = t == null ? state.t : t;
   if (!state.ready) return;
   if (changed || !pivots[actionId]) buildPivotFor(actionId);
-  if (changed) flyToAction(actionId);
   setPose(actionId, state.t);
+  if (changed) flyToAction(actionId);
+  else trackActionFocus(actionId);
   applyExplode(state.explode);
   setStepReveal(state.step, state.practice);
+}
+
+function debugSnapshot() {
+  const rig = R().RIGS[state.actionId];
+  const pivot = pivots[state.actionId] || null;
+  const focus = rig ? actionFocusMeshes(rig) : [];
+  const movable = rig ? findMeshes(rig.movable || [], rig.singleSide !== false, rig.sideSign) : [];
+  const L = state.ready ? getLandmarks() : null;
+  const box = rig ? focusBounds(rig) : null;
+  const center = box ? box.getCenter(new THREE.Vector3()) : null;
+
+  const movableBox = new THREE.Box3();
+  movable.forEach((m) => {
+    m.updateWorldMatrix(true, false);
+    movableBox.expandByObject(m);
+  });
+  const movableCenter = movable.length && !movableBox.isEmpty()
+    ? movableBox.getCenter(new THREE.Vector3())
+    : null;
+  const movableSize = movable.length && !movableBox.isEmpty()
+    ? movableBox.getSize(new THREE.Vector3())
+    : null;
+
+  return {
+    ready: state.ready,
+    actionId: state.actionId,
+    focusCount: focus.length,
+    movableCount: movable.length,
+    pivotChildCount: pivot ? pivot.children.length : 0,
+    focusCenter: center ? center.toArray() : null,
+    cameraTarget: controls ? controls.target.toArray() : null,
+    cameraPosition: camera ? camera.position.toArray() : null,
+    movableCenter: movableCenter ? movableCenter.toArray() : null,
+    movableSize: movableSize ? movableSize.toArray() : null,
+    movableSideXs: movable.map((m) => meshCenter(m).x),
+    arms: L ? { l1: L.a1.armLen, l2: L.a2.armLen } : null,
+    pointsFinite: !!(L &&
+      Number.isFinite(L.O.x) && Number.isFinite(L.O.y) &&
+      Number.isFinite(L.p1.x) && Number.isFinite(L.p1.y) &&
+      Number.isFinite(L.p2.x) && Number.isFinite(L.p2.y)),
+  };
 }
 
 function dispose() {
@@ -715,6 +854,7 @@ const Body3D = {
   setStepReveal,
   setOverlayFlags,
   getLandmarks,
+  debugSnapshot,
   isReady: () => state.ready,
   resize,
   onPick(fn) {

@@ -59,8 +59,19 @@
     curl: {
       id: 'curl',
       label: '举哑铃（肘）',
-      camera: { position: [1.28, 0.12, 0.50], target: [0.32, 0.02, 0], fov: 38 },
-      dimOpacity: 0.045,
+      singleSide: true,
+      sideSign: 1,
+      hideUnfocused: true,
+      focusOnlyHighlightedMuscle: true,
+      trackFocus: true,
+      camera: {
+        position: [1.28, 0.12, 0.50],
+        target: [0.32, 0.02, 0],
+        fov: 32,
+        fitPadding: 0.92,
+        minDistance: 0.34,
+      },
+      dimOpacity: 0.01,
       teaching: {
         joint: '肘关节',
         bones: '肱骨、尺骨、桡骨、手部骨骼',
@@ -71,7 +82,7 @@
       },
       focusPatterns: [
         /humerus/i, /radius/i, /ulna/i, /biceps brachii/i, /brachialis/i,
-        /metacarpal/i, /scapula/i, /forearm/i,
+        /metacarpal/i, /scapula/i, /clavicle/i,
       ],
       pivotFrom: [/trochlea of humerus/i, /capitulum of humerus/i, /head of radius/i, /olecranon/i],
       movable: [
