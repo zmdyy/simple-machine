@@ -62,6 +62,7 @@
       singleSide: true,
       sideSign: 1,
       hideUnfocused: true,
+      focusOnlyHighlightedMuscle: true,
       trackFocus: true,
       camera: {
         position: [1.28, 0.12, 0.50],
@@ -81,7 +82,7 @@
       },
       focusPatterns: [
         /humerus/i, /radius/i, /ulna/i, /biceps brachii/i, /brachialis/i,
-        /metacarpal/i, /scapula/i, /clavicle/i, /forearm/i,
+        /metacarpal/i, /scapula/i, /clavicle/i,
       ],
       pivotFrom: [/trochlea of humerus/i, /capitulum of humerus/i, /head of radius/i, /olecranon/i],
       movable: [
