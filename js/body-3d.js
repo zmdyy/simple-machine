@@ -289,6 +289,10 @@ function applyFocusDim() {
     }
     const inFocus = sideOk && focus && (R().matchAny(name, focus) || R().matchAny(detail, focus));
     const hi = sideOk && hiMus && (R().matchAny(name, hiMus) || R().matchAny(detail, hiMus));
+    if (rig && rig.focusOnlyHighlightedMuscle && type === 'muscle' && !hi) {
+      m.visible = false;
+      return;
+    }
     if (rig && rig.hideUnfocused && !inFocus) {
       m.visible = false;
       return;
