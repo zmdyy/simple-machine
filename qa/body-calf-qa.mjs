@@ -75,6 +75,10 @@ try {
 
   assert(dist(poses[0].s.followOffset, poses[2].s.followOffset) > 0.005,
     'lower-leg follower did not move as heel-rise changed');
+  assert(poses[2].s.worldPoints.p1[1] > poses[0].s.worldPoints.p1[1],
+    'heel did not rise as tiptoe parameter increased');
+  assert(poses[2].s.worldPoints.p2[1] > poses[0].s.worldPoints.p2[1],
+    'ankle/body load point did not rise as tiptoe parameter increased');
 
   // 相机旋转不能改变三维力臂。
   await setT(0.50);
