@@ -232,14 +232,11 @@
   function drawDumbbell(layer, p) {
     if (!p || ex().id !== 'curl') return;
     S.el('line', {
-      x1: p.x - 15, y1: p.y, x2: p.x + 15, y2: p.y,
-      stroke: '#334155', 'stroke-width': 5, 'stroke-linecap': 'round',
+      x1: p.x - 22, y1: p.y, x2: p.x + 22, y2: p.y,
+      stroke: '#111827', 'stroke-width': 7, 'stroke-linecap': 'round',
     }, layer);
-    S.el('circle', { cx: p.x - 18, cy: p.y, r: 8, fill: '#475569' }, layer);
-    S.el('circle', { cx: p.x + 18, cy: p.y, r: 8, fill: '#475569' }, layer);
-    S.el('text', {
-      x: p.x + 24, y: p.y - 8, fill: '#334155', 'font-size': 13, 'font-weight': 700,
-    }, layer).textContent = '哑铃';
+    S.el('rect', { x: p.x - 34, y: p.y - 11, width: 12, height: 22, rx: 3, fill: '#334155' }, layer);
+    S.el('rect', { x: p.x + 22, y: p.y - 11, width: 12, height: 22, rx: 3, fill: '#334155' }, layer);
   }
 
   function drawAbstractModel(layer, g) {
@@ -332,11 +329,15 @@
         { O: g.O, scale: 1.08 }
       );
       if (e.id === 'curl') {
+        S.el('circle', {
+          cx: g.p1.x, cy: g.p1.y, r: 5,
+          fill: C.F1, stroke: '#fff', 'stroke-width': 2,
+        }, Ldraw);
         S.el('text', {
-          x: g.p1.x + 14, y: g.p1.y + 22,
-          fill: C.F1, 'font-size': 14, 'font-weight': 800,
+          x: g.p1.x + 12, y: g.p1.y + 18,
+          fill: C.F1, 'font-size': 13, 'font-weight': 800,
           stroke: '#fff', 'stroke-width': 4, 'paint-order': 'stroke',
-        }, Ldraw).textContent = '肱二头肌牵拉桡骨';
+        }, Ldraw).textContent = '动力点';
       }
     }
 
@@ -349,11 +350,15 @@
       );
       drawDumbbell(Ldraw, g.p2);
       if (e.id === 'curl') {
+        S.el('circle', {
+          cx: g.p2.x, cy: g.p2.y, r: 5,
+          fill: C.F2, stroke: '#fff', 'stroke-width': 2,
+        }, Ldraw);
         S.el('text', {
-          x: g.p2.x + 22, y: g.p2.y + 24,
-          fill: C.F2, 'font-size': 14, 'font-weight': 800,
+          x: g.p2.x + 16, y: g.p2.y - 14,
+          fill: C.F2, 'font-size': 13, 'font-weight': 800,
           stroke: '#fff', 'stroke-width': 4, 'paint-order': 'stroke',
-        }, Ldraw).textContent = '哑铃重力';
+        }, Ldraw).textContent = '阻力点';
       }
     }
 
