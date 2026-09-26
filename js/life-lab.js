@@ -348,16 +348,31 @@
   }
 
   function exploreForcePx(m) {
-    // 同一阻力矩下 F₁/F₂ = l₂/l₁。箭头长度随所需动力单调变化；
-    // 为避免接近零力臂时箭头冲出画面，使用平方根压缩并设置显示上限。
-    if (!m || m.nearZero || !isFinite(m.ratio)) return 165;
-    const r = Math.max(0.18, Math.min(4, m.ratio));
-    return Math.max(52, Math.min(165, 84 * Math.sqrt(r)));
+    // 同一阻力矩下 F₁/F₂ = l₂/l₁。
+    // 原先平方根映射在 F₁/F₂ < 0.18 时被 52 px 下限“压扁”，学生几乎看不出力的变化。
+    // 改用 log1p 映射：小力区也有明显长度差异，同时接近零力臂时仍限制在画布可接受范围。
+    if (!m || m.nearZero || !isFinite(m.ratio)) return 220;
+    const r = Math.max(0, Math.min(4, m.ratio));
+    const u = Math.log1p(3 * r) / Math.log(13); // r=0→0，r=4→1
+    return 44 + 176 * u;                        // 44～220 px
+  }
+
+  function exploreForceScale(m) {
+    // 除长度外再轻微改变箭头粗细/箭头头部/标签尺寸，让“力变大”更直观。
+    if (!m || m.nearZero || !isFinite(m.ratio)) return 1.42;
+    const r = Math.max(0, Math.min(4, m.ratio));
+    const u = Math.log1p(2 * r) / Math.log(9);
+    return 0.92 + 0.50 * u;                    // 约 0.92～1.42
+  }
+
+  function exploreRequiredF1(g, m) {
+    if (!g || !m || m.nearZero || !isFinite(m.ratio)) return Infinity;
+    return Math.max(0, g.f2 * m.ratio);
   }
 
   function exploreHandlePx(m) {
-    // 拖动小球至少离作用点 120 px；较大的力箭头时再向外留 28 px。
-    return Math.max(120, exploreForcePx(m) + 28);
+    // 拖动小球始终在力箭头之外，避免箭头变长后控制点压在箭头上。
+    return Math.max(132, exploreForcePx(m) + 34);
   }
 
   function boundaryDirection(g, candidate) {
@@ -489,8 +504,16 @@
         // F1 方向可拖；作用线与 l1 按当前方向实时重算。
         // 同样任务下 l1 越小，所需 F1 越大，红色力箭头也随之增长。
         const forcePx = exploreForcePx(em);
+        const forceScale = exploreForceScale(em);
+        const requiredF1 = exploreRequiredF1(g, em);
         const handlePx = exploreHandlePx(em);
-        S.drawForceArrow(Ldraw, g.p1, em.d1, forcePx, C.F1, 'F₁', { O: em.O });
+        const forceLabel = isFinite(requiredF1)
+          ? 'F₁ ≈ ' + requiredF1.toFixed(requiredF1 < 10 ? 1 : 0) + ' N'
+          : 'F₁ → 很大';
+        S.drawForceArrow(
+          Ldraw, g.p1, em.d1, forcePx, C.F1, forceLabel,
+          { O: em.O, scale: forceScale, labelOffset: 48 }
+        );
         S.drawForceLine(Ldraw, g.p1, em.d1, 190, C.F1);
         if (!em.nearZero && em.a1.armLen > 4) {
           S.drawArm(Ldraw, em.O, em.a1.foot, 'l₁', false, C.arm1, em.d1);
@@ -573,10 +596,14 @@
       } else {
         const lr = em.a2.armLen > 1e-6 ? em.a1.armLen / em.a2.armLen : Infinity;
         const fr = isFinite(em.ratio) ? em.ratio.toFixed(2) : '∞';
+        const reqF1 = exploreRequiredF1(g, em);
         classBox.innerHTML =
           '<b>当前施力方向：' + em.cls.type + '</b><br>' +
           'l₁/l₂ = ' + (isFinite(lr) ? lr.toFixed(2) : '∞') +
-          '　·　完成同样任务时 F₁/F₂ ≈ ' + fr;
+          '　·　F₁/F₂ ≈ ' + fr + '<br>' +
+          '<b style="color:' + C.F1 + '">所需动力 F₁ ≈ ' +
+          (isFinite(reqF1) ? reqF1.toFixed(reqF1 < 10 ? 1 : 0) + ' N' : '很大') +
+          '</b>（F₂ = ' + g.f2 + ' N）';
         if (g.stageName) classBox.innerHTML += '<br>' + g.stageName;
       }
     } else {
@@ -870,7 +897,12 @@
           if (m.nearZero || state.exploreStatus === 'blocked') {
             setJudge('动力臂接近 0，这个方向几乎不能使杠杆绕 O 转动。', null);
           } else {
-            setJudge('正在探究：只改变 F₁ 方向，观察动力臂和所需动力比例如何变化。', true);
+            const req = exploreRequiredF1(g, m);
+            setJudge(
+              '正在探究：l₁ 改变时，完成同样任务所需 F₁ 也随之改变。当前 F₁ ≈ ' +
+              (isFinite(req) ? req.toFixed(req < 10 ? 1 : 0) + ' N。' : '很大。'),
+              true
+            );
           }
         }
         render();
