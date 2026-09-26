@@ -1,0 +1,50 @@
+name: Body Curl Internal QA
+
+on:
+  push:
+    branches:
+      - body-curl-review-20260926
+    paths:
+      - 'js/body-3d.js'
+      - 'js/body-lab.js'
+      - 'js/anatomy-rigs.js'
+      - 'js/body-scenes.js'
+      - 'css/app.css'
+      - 'index.html'
+      - 'qa/body-curl-qa.mjs'
+      - '.github/workflows/body-curl-qa.yml'
+  workflow_dispatch:
+
+jobs:
+  curl-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Start local site
+        run: |
+          python3 -m http.server 5500 > /tmp/simple-machine-server.log 2>&1 &
+          sleep 2
+
+      - name: Run body curl QA
+        run: node qa/body-curl-qa.mjs
+
+      - name: Upload QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: body-curl-qa
+          path: |
+            qa-artifacts
+            /tmp/simple-machine-server.log
+          if-no-files-found: warn
