@@ -90,9 +90,9 @@ try {
   // 动作切换再返回：同一 t 下可动肢体包围盒必须回到同一位置，防止姿态被烘焙。
   await setT(0.80);
   const beforeSwitch = await page.evaluate(() => window.Body3D.debugSnapshot());
-  await page.click('#bodyList [data-i="0"]');
+  await page.evaluate(() => document.querySelector('#bodyList [data-i="0"]').click());
   await page.waitForTimeout(700);
-  await page.click('#bodyList [data-i="1"]');
+  await page.evaluate(() => document.querySelector('#bodyList [data-i="1"]').click());
   await page.waitForTimeout(700);
   await setT(0.80);
   const afterSwitch = await page.evaluate(() => window.Body3D.debugSnapshot());
