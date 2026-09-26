@@ -39,8 +39,20 @@ async function snap(name) {
 try {
   await page.goto('http://127.0.0.1:5500/index.html', { waitUntil: 'domcontentloaded', timeout: 120000 });
   await page.evaluate(() => window.AppNav.show('body'));
-  await page.waitForFunction(() => window.Body3D && Body3D.isReady(), { timeout: 120000 });
-  await page.waitForTimeout(2500);
+  try {
+    await page.waitForFunction(() => window.Body3D && Body3D.isReady(), { timeout: 45000 });
+  } catch (err) {
+    const diag = await page.evaluate(() => ({
+      hasBody3D: !!window.Body3D,
+      body3dReady: !!(window.Body3D && Body3D.isReady && Body3D.isReady()),
+      status: document.getElementById('body3dStatus')?.textContent || '',
+      bootTitle: document.querySelector('#body3dBoot h3')?.textContent || '',
+      bootText: document.querySelector('#body3dBoot p')?.textContent || '',
+    }));
+    fs.writeFileSync(OUT + '/boot-diagnostic.json', JSON.stringify({ diag, consoleErrors }, null, 2));
+    throw err;
+  }
+  await page.waitForTimeout(1800);
 
   // 进入第 5 步，让 O/F/l 的教学标注都出现。
   await page.click('#bodySkip');
