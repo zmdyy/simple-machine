@@ -59,7 +59,14 @@
     curl: {
       id: 'curl',
       label: '举哑铃（肘）',
-      camera: { position: [1.28, 0.12, 0.50], target: [0.32, 0.02, 0], fov: 38 },
+      singleSide: true,
+      camera: {
+        position: [1.28, 0.12, 0.50],
+        target: [0.32, 0.02, 0],
+        fov: 34,
+        fitPadding: 1.22,
+        minDistance: 0.38,
+      },
       dimOpacity: 0.045,
       teaching: {
         joint: '肘关节',
