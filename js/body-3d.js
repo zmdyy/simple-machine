@@ -169,14 +169,6 @@ function restoreMeshHome(m) {
   m.updateMatrix();
 }
 
-function restoreMeshHome(m) {
-  if (!m || !m.userData.restParent) return;
-  m.userData.restParent.add(m);
-  if (m.userData.restLocal) m.position.copy(m.userData.restLocal);
-  if (m.userData.restQuat) m.quaternion.copy(m.userData.restQuat);
-  if (m.userData.restScale) m.scale.copy(m.userData.restScale);
-  m.updateMatrix();
-}
 
 function clearPivots() {
   meshes.forEach(restoreMeshHome);
