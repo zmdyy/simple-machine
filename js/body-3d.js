@@ -777,6 +777,19 @@ function debugSnapshot() {
   const L = state.ready ? getLandmarks() : null;
   const box = rig ? focusBounds(rig) : null;
   const center = box ? box.getCenter(new THREE.Vector3()) : null;
+
+  const movableBox = new THREE.Box3();
+  movable.forEach((m) => {
+    m.updateWorldMatrix(true, false);
+    movableBox.expandByObject(m);
+  });
+  const movableCenter = movable.length && !movableBox.isEmpty()
+    ? movableBox.getCenter(new THREE.Vector3())
+    : null;
+  const movableSize = movable.length && !movableBox.isEmpty()
+    ? movableBox.getSize(new THREE.Vector3())
+    : null;
+
   return {
     ready: state.ready,
     actionId: state.actionId,
@@ -786,6 +799,9 @@ function debugSnapshot() {
     focusCenter: center ? center.toArray() : null,
     cameraTarget: controls ? controls.target.toArray() : null,
     cameraPosition: camera ? camera.position.toArray() : null,
+    movableCenter: movableCenter ? movableCenter.toArray() : null,
+    movableSize: movableSize ? movableSize.toArray() : null,
+    movableSideXs: movable.map((m) => meshCenter(m).x),
     arms: L ? { l1: L.a1.armLen, l2: L.a2.armLen } : null,
     pointsFinite: !!(L &&
       Number.isFinite(L.O.x) && Number.isFinite(L.O.y) &&
