@@ -104,7 +104,7 @@ function meshCenter(obj) {
   return box.getCenter(new THREE.Vector3());
 }
 
-function findMeshes(patterns, sidePrefer) {
+function findMeshes(patterns, sidePrefer, sideSign) {
   const hit = [];
   for (const m of meshes) {
     const name = m.name || '';
@@ -112,11 +112,24 @@ function findMeshes(patterns, sidePrefer) {
     if (!R().matchAny(name, patterns) && !R().matchAny(detail, patterns)) continue;
     hit.push(m);
   }
-  if (sidePrefer) {
-    const pref = hit.filter((m) => R().preferSide(m.name));
-    if (pref.length) return pref;
+  if (!sidePrefer || hit.length < 2) return hit;
+
+  // 对“单侧动作模板”，优先按模型实际左右空间位置筛选，而不是只依赖 .001 后缀。
+  // 模型已经居中，因此 x 正/负可稳定区分左右侧；curl 明确指定 sideSign=+1。
+  if (sideSign === 1 || sideSign === -1) {
+    const tol = 0.015;
+    const spatial = hit.filter((m) => {
+      const x = meshCenter(m).x;
+      return sideSign > 0 ? x >= -tol : x <= tol;
+    });
+    if (spatial.length) return spatial;
   }
-  return hit;
+
+  const pref = hit.filter((m) => {
+    const detail = (m.userData && (m.userData.nameDetail || m.userData.name)) || '';
+    return R().preferSide(m.name, detail);
+  });
+  return pref.length ? pref : hit;
 }
 
 function centerOfMeshes(list) {
@@ -139,7 +152,8 @@ function makeCtx(t) {
       return to.clone().sub(from).normalize();
     },
     centerOf(patterns) {
-      return centerOfMeshes(findMeshes(patterns, true));
+      const rig = R().RIGS[state.actionId];
+      return centerOfMeshes(findMeshes(patterns, true, rig && rig.sideSign));
     },
   };
 }
@@ -175,10 +189,10 @@ function buildPivotFor(actionId) {
 
   clearPivots();
 
-  const pivotSources = findMeshes(rig.pivotFrom, true);
+  const pivotSources = findMeshes(rig.pivotFrom, true, rig.sideSign);
   let pivotPos = centerOfMeshes(pivotSources);
   if (!pivotPos) {
-    const focus = findMeshes(rig.focusPatterns, true);
+    const focus = findMeshes(rig.focusPatterns, true, rig.sideSign);
     pivotPos = centerOfMeshes(focus) || new THREE.Vector3();
   }
 
@@ -189,7 +203,7 @@ function buildPivotFor(actionId) {
 
   // 固定动作模板默认只驱动一侧肢体。BodyParts3D 的另一侧网格常以 .001 等后缀区分。
   // 之前这里 sidePrefer=false 会把左右两侧前臂同时绑到同一个肘关节，导致另一侧肢体飞离身体。
-  const movable = findMeshes(rig.movable, rig.singleSide !== false);
+  const movable = findMeshes(rig.movable, rig.singleSide !== false, rig.sideSign);
   movable.forEach((m) => {
     // 避免把枢轴骨本身绑进会转的组导致漂移：枢轴参考网格仍可高亮但不强制排除
     pivot.attach(m);
@@ -204,7 +218,7 @@ function buildPivotFor(actionId) {
     kneePivot.name = 'pivot_knee';
     kneePivot.position.copy(kp);
     root.add(kneePivot);
-    findMeshes(rig.kneeMovable, rig.singleSide !== false).forEach((m) => kneePivot.attach(m));
+    findMeshes(rig.kneeMovable, rig.singleSide !== false, rig.sideSign).forEach((m) => kneePivot.attach(m));
   }
 }
 
@@ -266,9 +280,19 @@ function applyFocusDim() {
     let opacity = rig && rig.dimOpacity != null ? rig.dimOpacity : MAT.dim;
     const name = m.name || '';
     const detail = (m.userData && (m.userData.nameDetail || m.userData.name)) || '';
-    const sideOk = !rig || rig.singleSide === false || R().preferSide(name);
+    let sideOk = true;
+    if (rig && rig.singleSide !== false && (rig.sideSign === 1 || rig.sideSign === -1)) {
+      const x = meshCenter(m).x;
+      sideOk = rig.sideSign > 0 ? x >= -0.015 : x <= 0.015;
+    } else if (rig && rig.singleSide !== false) {
+      sideOk = R().preferSide(name, detail);
+    }
     const inFocus = sideOk && focus && (R().matchAny(name, focus) || R().matchAny(detail, focus));
     const hi = sideOk && hiMus && (R().matchAny(name, hiMus) || R().matchAny(detail, hiMus));
+    if (rig && rig.hideUnfocusedOther && type === 'other' && !inFocus) {
+      m.visible = false;
+      return;
+    }
     if (inFocus) opacity = MAT.focus;
     if (hi) {
       opacity = 1;
@@ -313,7 +337,7 @@ function storeRestPose() {
 
 function actionFocusMeshes(rig) {
   if (!rig || !rig.focusPatterns) return [];
-  return findMeshes(rig.focusPatterns, rig.singleSide !== false);
+  return findMeshes(rig.focusPatterns, rig.singleSide !== false, rig.sideSign);
 }
 
 function focusBounds(rig) {
@@ -739,8 +763,8 @@ function setAction(actionId, t) {
   state.t = t == null ? state.t : t;
   if (!state.ready) return;
   if (changed || !pivots[actionId]) buildPivotFor(actionId);
-  if (changed) flyToAction(actionId);
   setPose(actionId, state.t);
+  if (changed) flyToAction(actionId);
   applyExplode(state.explode);
   setStepReveal(state.step, state.practice);
 }
@@ -749,7 +773,7 @@ function debugSnapshot() {
   const rig = R().RIGS[state.actionId];
   const pivot = pivots[state.actionId] || null;
   const focus = rig ? actionFocusMeshes(rig) : [];
-  const movable = rig ? findMeshes(rig.movable || [], rig.singleSide !== false) : [];
+  const movable = rig ? findMeshes(rig.movable || [], rig.singleSide !== false, rig.sideSign) : [];
   const L = state.ready ? getLandmarks() : null;
   const box = rig ? focusBounds(rig) : null;
   const center = box ? box.getCenter(new THREE.Vector3()) : null;
