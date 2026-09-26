@@ -360,7 +360,8 @@
 
     // 分步揭示：1 解剖；2 O；3 F₁；4 F₂；5 力臂；6 动态；7 抽象。
     if (step >= 2) {
-      S.drawPivot(Ldraw, g.O);
+      // 踮脚另用左侧“前脚掌 O”说明，避免与 drawPivot 默认的 O 重复。
+      S.drawPivot(Ldraw, g.O, e.id === 'calf' ? ' ' : undefined);
       if (e.id === 'curl' || e.id === 'calf') {
         S.el('text', {
           x: e.id === 'calf' ? g.O.x - 28 : g.O.x + 34,
