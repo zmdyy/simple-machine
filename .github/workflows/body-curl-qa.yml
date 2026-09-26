@@ -1,4 +1,4 @@
-name: Body Curl Internal QA
+name: Body Lever Internal QA
 
 on:
   pull_request:
@@ -11,7 +11,7 @@ on:
       - 'js/body-scenes.js'
       - 'css/app.css'
       - 'index.html'
-      - 'qa/body-curl-qa.mjs'
+      - 'qa/body-curl-qa.mjs'\n      - 'qa/body-calf-qa.mjs'
   workflow_dispatch:
 
 jobs:
@@ -38,6 +38,9 @@ jobs:
       - name: Run body curl QA
         run: node qa/body-curl-qa.mjs
 
+      - name: Run body calf QA
+        run: node qa/body-calf-qa.mjs
+
       - name: Upload QA evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -45,5 +48,6 @@ jobs:
           name: body-curl-qa
           path: |
             qa-artifacts
+            qa-artifacts-calf
             simple-machine-server.log
           if-no-files-found: warn
