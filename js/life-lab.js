@@ -235,7 +235,7 @@
       pivotTol: 38,
       getGeom(t) {
         const P = (u, v) => K.v(172 + u * 456, 12 + v * 456 * (826 / 942));
-        const O = P(0.18610, 0.76313);
+        const O = P(0.24200, 0.74800);
         const A = P(0.76955, 0.09543);
         const B = P(0.15204, 0.71721);
         const near = P(0.400, 0.500);
