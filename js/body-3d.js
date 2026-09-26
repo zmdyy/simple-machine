@@ -158,26 +158,29 @@ function makeCtx(t) {
   };
 }
 
+function restoreMeshHome(m) {
+  if (!m || !m.userData.restParent) return;
+  // 不保留当前世界姿态，直接恢复 GLB 初始层级和局部变换。
+  // 这样动作切换不会因为 attach/detach 的矩阵换算产生累计漂移。
+  m.userData.restParent.add(m);
+  if (m.userData.restLocal) m.position.copy(m.userData.restLocal);
+  if (m.userData.restQuat) m.quaternion.copy(m.userData.restQuat);
+  if (m.userData.restScale) m.scale.copy(m.userData.restScale);
+  m.updateMatrix();
+}
+
 function clearPivots() {
-  // 先把临时关节恢复到 0°，再把子网格挂回根节点。
-  // 否则 root.attach 会把“当前动作姿态”永久烘焙到网格世界变换里，
-  // 多次切换动作后就会出现手臂/腿漂到身体其他位置。
+  // 先把所有网格精确恢复到模型初始层级/局部姿态，再删除临时关节。
+  // 这比 root.attach 回去更稳定，可避免“curl → 其他动作 → curl”后发生姿态烘焙或漂移。
+  meshes.forEach(restoreMeshHome);
+
   Object.keys(pivots).forEach((id) => {
     const p = pivots[id];
-    if (!p) return;
-    p.rotation.set(0, 0, 0);
-    p.updateMatrixWorld(true);
-    while (p.children.length) {
-      const ch = p.children[0];
-      root.attach(ch);
-    }
-    if (p.parent) p.parent.remove(p);
+    if (p && p.parent) p.parent.remove(p);
   });
   pivots = {};
+
   if (kneePivot) {
-    kneePivot.rotation.set(0, 0, 0);
-    kneePivot.updateMatrixWorld(true);
-    while (kneePivot.children.length) root.attach(kneePivot.children[0]);
     if (kneePivot.parent) kneePivot.parent.remove(kneePivot);
     kneePivot = null;
   }
@@ -333,13 +336,17 @@ function applyExplode(amount) {
 function storeRestPose() {
   const origin = new THREE.Vector3();
   meshes.forEach((m) => {
+    m.userData.restParent = m.parent;
     m.userData.restLocal = m.position.clone();
+    m.userData.restQuat = m.quaternion.clone();
+    m.userData.restScale = m.scale.clone();
+
     const c = meshCenter(m);
     const dir = c.clone().sub(origin);
     if (dir.lengthSq() < 1e-6) dir.set(0, 1, 0);
     else dir.normalize();
     m.userData.explodeDir = dir;
-    m.userData.restWorld = c;
+    m.userData.restWorld = c.clone();
   });
 }
 
