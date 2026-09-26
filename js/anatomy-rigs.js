@@ -23,30 +23,59 @@
     calf: {
       id: 'calf',
       label: '踮脚',
-      camera: { position: [0.55, -0.55, 1.35], target: [0.08, -0.72, 0.05], fov: 42 },
+      singleSide: true,
+      sideSign: 1,
+      hideUnfocused: true,
+      focusOnlyHighlightedMuscle: true,
+      trackFocus: true,
+      camera: {
+        position: [0.72, -0.58, 1.18],
+        target: [0.12, -0.82, 0.03],
+        fov: 34,
+        fitPadding: 1.02,
+        minDistance: 0.38,
+      },
+      dimOpacity: 0.01,
+      teaching: {
+        joint: '前脚掌着地点（跖趾关节附近，简化为支点）',
+        bones: '胫骨、腓骨、距骨、跟骨、跖骨和趾骨',
+        muscles: '腓肠肌、比目鱼肌（经跟腱作用于跟骨）',
+        effort: '小腿三头肌经跟腱向上牵拉跟骨，形成动力 F₁',
+        load: '身体重力经踝部向下作用，取约 600 N 作课堂示意',
+        note: '这是用于初中力学学习的简化人体杠杆模型：把前脚掌着地点看作支点，忽略足部多关节、软组织弹性和动态惯性。',
+      },
       focusPatterns: [
-        /tibia/i, /fibula/i, /calcane/i, /talus/i, /metatars/i,
-        /phalanx of .*foot/i, /gastrocnemius/i, /soleus/i, /plantaris/i,
-        /bones of foot/i, /muscles of foot/i,
+        /tibia/i, /fibula/i, /calcane/i, /talus/i, /navicular/i, /cuboid/i,
+        /cuneiform/i, /metatars/i, /phalanx of .*foot/i,
+        /gastrocnemius/i, /soleus/i, /calcaneal tendon/i, /achilles/i,
       ],
-      pivotFrom: [/first metatarsal bone(?!\.)/i, /first metatarsal bone/i, /metatarsal bones/i],
+      pivotFrom: [
+        /head of first metatarsal/i, /first metatarsal bone/i,
+        /metatarsal bones/i,
+      ],
       movable: [
         /calcane/i, /talus/i, /navicular/i, /cuboid/i, /cuneiform/i,
         /metatarsal/i, /phalanx of .*foot/i, /sesamoid.*foot/i, /bones of foot/i,
       ],
-      // 腓肠肌/比目鱼肌留在小腿上不跟着脚转（近似）
-      highlightMuscle: [/gastrocnemius/i, /soleus/i, /plantaris/i],
-      axis: 'x', // 侧视绕左右轴抬脚跟（模型 Y 向上）
-      angleMin: 0,
-      angleMax: 0.55, // rad ≈ 31°
+      // 足部绕前脚掌转动；小腿骨和主要小腿肌群只跟随踝部平移，
+      // 避免把整条小腿和脚刚性焊成一根杆。
+      followMovable: [/tibia/i, /fibula/i, /gastrocnemius/i, /soleus/i, /plantaris/i],
+      followAnchor: [/talus(?!\.)/i, /talus/i, /inferior articular surface of tibia/i],
+      highlightMuscle: [/gastrocnemius/i, /soleus/i, /calcaneal tendon/i, /achilles/i],
+      axis: 'x',
+      angleMin: 0.02,
+      angleMax: 0.32,
       landmarks(ctx) {
-        const O = ctx.centerOf([/first metatarsal/i, /head of metatarsal/i]) || ctx.pivotWorld;
-        const heel = ctx.centerOf([/calcaneal tuberosity/i, /calcaneus(?!\.)/i, /calcaneus/i]) || O.clone().add(ctx.v(-0.08, -0.02, -0.06));
-        const ankle = ctx.centerOf([/talus(?!\.)/i, /talus/i, /inferior articular surface of tibia/i]) || O.clone().add(ctx.v(0.02, 0.08, 0));
-        const belly = ctx.centerOf([/soleus/i, /gastrocnemius/i]) || ankle.clone().add(ctx.v(0, 0.12, -0.04));
+        const O = ctx.centerOf([/head of first metatarsal/i, /first metatarsal/i, /metatarsal bones/i]) || ctx.pivotWorld;
+        const heel = ctx.centerOf([/calcaneal tuberosity/i, /calcaneus(?!\.)/i, /calcaneus/i]) ||
+          O.clone().add(ctx.v(-0.10, 0.01, -0.04));
+        const ankle = ctx.centerOf([/talus(?!\.)/i, /talus/i, /inferior articular surface of tibia/i]) ||
+          O.clone().lerp(heel, 0.58).add(ctx.v(0, 0.05, 0));
+        const belly = ctx.centerOf([/soleus/i, /gastrocnemius/i]) ||
+          ankle.clone().add(ctx.v(0, 0.18, -0.02));
         return {
           O,
-          p1: heel.clone().lerp(belly, 0.15),
+          p1: heel,
           d1: ctx.dir(heel, belly),
           p2: ankle,
           d2: ctx.v(0, -1, 0),
