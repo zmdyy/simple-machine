@@ -104,9 +104,12 @@
         <div class="stage">
           <div class="stage-toolbar">
             <button type="button" class="btn" id="bodyPrev">上一步</button>
-            <span class="step-badge" id="bodyStepBadge">步骤 1 / 9</span>
+            <span class="step-badge" id="bodyStepBadge">步骤 1 / 7</span>
             <button type="button" class="btn primary" id="bodyNext">下一步</button>
-            <button type="button" class="btn ghost" id="bodySkip">跳到调参数</button>
+            <button type="button" class="btn ghost" id="bodySkip">直接看力臂</button>
+            <span class="sep"></span>
+            <button type="button" class="btn" id="bodyPlay">播放动作</button>
+            <button type="button" class="btn" id="bodyAbstract">简化成杠杆</button>
             <span class="sep"></span>
             <button type="button" class="btn active-toggle" id="bodyToggleBone" data-on="1">骨</button>
             <button type="button" class="btn active-toggle" id="bodyToggleMuscle" data-on="1">肌</button>
@@ -114,8 +117,7 @@
             <label class="toolbar-slider" title="分离骨骼与肌肉便于观察">分离观察
               <input type="range" id="bodyExplode" min="0" max="100" step="1" value="0" />
             </label>
-            <button type="button" class="btn" id="bodyExitPractice">退出你来画</button>
-            <span class="hint" id="body3dStatus" style="margin-left:auto">侧视实拍</span>
+            <span class="hint" id="body3dStatus" style="margin-left:auto">局部解剖观察</span>
           </div>
           <div class="body3d-stage" id="body3dStage">
             <canvas id="body3dCanvas"></canvas>
@@ -140,6 +142,12 @@
           <div class="life-list" id="bodyList"></div>
           <p class="hint" id="bodyAction"></p>
           <p class="hint" id="bodyWhy"></p>
+          <div class="task-card" id="bodyTemplateCard">
+            <div class="task-card-title" id="bodyTemplateTitle">举哑铃 · 人体杠杆动作模板</div>
+            <p class="task-card-body" id="bodyTemplateAnatomy"></p>
+            <p class="task-card-body" id="bodyTemplateLever"></p>
+            <div class="task-card-known" id="bodyTemplateNote"></div>
+          </div>
           <div class="moment-bars">
             <div class="moment-bar-label"><span id="bodyM1Lab">F₁·l₁</span></div>
             <div class="moment-bar"><span class="m1" id="bodyM1" style="width:50%"></span></div>
@@ -158,8 +166,9 @@
             <p class="task-card-body" id="bodyFilmTip">侧拍整段动作，关节别裁出画外。</p>
             <button type="button" class="btn primary" id="bodyOpenVideo">用本课口令打开视频叠力臂</button>
           </div>
-          <div class="judge-msg" id="bodyJudge">从踮脚（课眼）开始，点「下一步」分步揭示。</div>
-          <p class="hint"><strong>读图：</strong>侧视实拍。关节/着地点是 O，肌肉拉力是红 F₁，重力竖直向下是蓝 F₂。踮脚、头颈可随滑块转动；弯腰与蹲抬是两张对照。重力恒竖直。</p>
+          <div class="judge-msg" id="bodyJudge">从“举哑铃”样板开始：先看真实解剖，再逐步抽象成杠杆。</div>
+          <p class="hint"><strong>本模块只做观察理解：</strong>不要求学生在人体上作图。先识别主要骨骼、肌肉和关节，再观察 O、F₁、F₂、l₁、l₂ 如何随动作变化。</p>
+          <p class="hint"><strong>模型说明：</strong>这是用于初中力学学习的简化人体杠杆模型，不代表完整人体生物力学受力；举哑铃样板暂忽略前臂和手自身重力。</p>
           <p class="hint body-attr" id="bodyAttr">解剖数据：BodyParts3D (DBCLS) · CC BY 4.0 · 经 Z-Anatomy 整理</p>
         </aside>
       </section>
@@ -345,10 +354,10 @@
   <script src="js/arm-lab.js?v=20260925c"></script>
   <script src="js/life-scenes.js?v=20260926c"></script>
   <script src="js/life-lab.js?v=20260926d"></script>
-  <script src="js/anatomy-rigs.js?v=20260320m"></script>
-  <script type="module" src="js/body-3d.js?v=20260320m"></script>
+  <script src="js/anatomy-rigs.js?v=20260926e"></script>
+  <script type="module" src="js/body-3d.js?v=20260926e"></script>
   <script src="js/body-scenes.js?v=20260922a"></script>
-  <script src="js/body-lab.js?v=20260922k"></script>
+  <script src="js/body-lab.js?v=20260926e"></script>
   <script src="js/balance-lab.js?v=20260320m"></script>
   <script src="js/video-lab.js?v=20260320m"></script>
   <script src="js/dynamic-life-lab.js?v=20260923a"></script>
