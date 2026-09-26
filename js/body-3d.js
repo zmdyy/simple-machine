@@ -472,17 +472,16 @@ function setLayers({ bone, muscle }) {
 
 function setStepReveal(step, practice) {
   state.step = step;
-  state.practice = !!practice;
-  if (stageEl) stageEl.classList.toggle('practice', state.practice);
-  if (practice) {
-    setOverlayFlags({ showO: false, showF: false, showArm: false, showBar: true });
-    return;
-  }
+  state.practice = false;
+  if (stageEl) stageEl.classList.remove('practice');
+
+  // 教学标注统一交给 body-lab 的 SVG 层绘制。
+  // 3D 层只负责解剖结构、姿态和世界坐标，避免 3D 线条与 SVG 标注重复叠画。
   setOverlayFlags({
-    showO: step >= 2,
-    showF: step >= 3,
-    showBar: step >= 4,
-    showArm: step >= 5,
+    showO: false,
+    showF: false,
+    showBar: false,
+    showArm: false,
   });
 }
 
