@@ -36,6 +36,7 @@ let state = {
 let scene, camera, renderer, controls, root, modelRoot;
 let meshes = [];
 let pivots = {};
+let followGroups = {};
 let kneePivot = null;
 let overlayGroup;
 let clock;
@@ -179,6 +180,12 @@ function clearPivots() {
   });
   pivots = {};
 
+  Object.keys(followGroups).forEach((id) => {
+    const g = followGroups[id];
+    if (g && g.parent) g.parent.remove(g);
+  });
+  followGroups = {};
+
   if (kneePivot) {
     if (kneePivot.parent) kneePivot.parent.remove(kneePivot);
     kneePivot = null;
@@ -212,6 +219,23 @@ function buildPivotFor(actionId) {
   });
   pivots[actionId] = pivot;
 
+  // 某些人体动作需要“主杠杆转动 + 相邻肢段随关节平移”。
+  // 例如踮脚：足部绕前脚掌抬起，但小腿不应和足部一起僵硬旋转。
+  if (rig.followMovable && rig.followAnchor) {
+    const follow = new THREE.Object3D();
+    follow.name = 'follow_' + actionId;
+    root.add(follow);
+
+    const followers = findMeshes(rig.followMovable, rig.singleSide !== false, rig.sideSign)
+      .filter((m) => m.parent !== pivot);
+    followers.forEach((m) => follow.attach(m));
+
+    const anchor = centerOfMeshes(findMeshes(rig.followAnchor, rig.singleSide !== false, rig.sideSign));
+    if (anchor) follow.userData.baseAnchor = root.worldToLocal(anchor.clone());
+    follow.userData.anchorPatterns = rig.followAnchor;
+    followGroups[actionId] = follow;
+  }
+
   if (actionId === 'lift' && rig.kneeMovable) {
     const kneeSources = findMeshes([/patella(?!\.)/i, /tibial plateau/i, /lateral condyle of femur/i], true);
     let kp = centerOfMeshes(kneeSources);
@@ -237,6 +261,9 @@ function setPose(actionId, t) {
   pivot.rotation.set(0, 0, 0);
   if (kneePivot) kneePivot.rotation.set(0, 0, 0);
 
+  const follow = followGroups[actionId] || null;
+  if (follow) follow.position.set(0, 0, 0);
+
   if (actionId === 'lift') {
     if (t < 0.5) {
       const lean = (t / 0.5) * 0.85;
@@ -253,9 +280,19 @@ function setPose(actionId, t) {
     if (rig.axis === 'x') pivot.rotation.x = ang;
     else if (rig.axis === 'y') pivot.rotation.y = ang;
     else pivot.rotation.z = ang;
-    // 踮脚：脚跟抬起方向与模型轴向可能相反，取负
-    if (actionId === 'calf') pivot.rotation.x = -ang;
+    // 踮脚：随参数增大让跟骨/踝部向上抬起。
+    if (actionId === 'calf') pivot.rotation.x = ang;
     if (actionId === 'neck') pivot.rotation.x = ang;
+  }
+
+  if (follow && follow.userData.baseAnchor && follow.userData.anchorPatterns) {
+    const anchorNow = centerOfMeshes(
+      findMeshes(follow.userData.anchorPatterns, rig.singleSide !== false, rig.sideSign)
+    );
+    if (anchorNow) {
+      const localNow = root.worldToLocal(anchorNow.clone());
+      follow.position.copy(localNow.sub(follow.userData.baseAnchor));
+    }
   }
 
   applyFocusDim();
@@ -324,7 +361,8 @@ function applyExplode(amount) {
   meshes.forEach((m) => {
     if (!m.userData.restWorld) return;
     // 仅对未挂在关节下的、或爆炸时相对根偏移
-    if (m.parent && m.parent.name && m.parent.name.indexOf('pivot_') === 0) return;
+    if (m.parent && m.parent.name &&
+        (m.parent.name.indexOf('pivot_') === 0 || m.parent.name.indexOf('follow_') === 0)) return;
     const rest = m.userData.restLocal;
     const out = m.userData.explodeDir;
     if (!rest || !out) return;
@@ -802,6 +840,7 @@ function debugSnapshot() {
   const focus = rig ? actionFocusMeshes(rig) : [];
   const movable = rig ? findMeshes(rig.movable || [], rig.singleSide !== false, rig.sideSign) : [];
   const L = state.ready ? getLandmarks() : null;
+  const W = (state.ready && rig) ? rig.landmarks(makeCtx(state.t)) : null;
   const box = rig ? focusBounds(rig) : null;
   const center = box ? box.getCenter(new THREE.Vector3()) : null;
 
@@ -823,6 +862,8 @@ function debugSnapshot() {
     focusCount: focus.length,
     movableCount: movable.length,
     pivotChildCount: pivot ? pivot.children.length : 0,
+    followCount: followGroups[state.actionId] ? followGroups[state.actionId].children.length : 0,
+    followOffset: followGroups[state.actionId] ? followGroups[state.actionId].position.toArray() : null,
     focusCenter: center ? center.toArray() : null,
     cameraTarget: controls ? controls.target.toArray() : null,
     cameraPosition: camera ? camera.position.toArray() : null,
@@ -830,6 +871,11 @@ function debugSnapshot() {
     movableSize: movableSize ? movableSize.toArray() : null,
     movableSideXs: movable.map((m) => meshCenter(m).x),
     arms: L ? { l1: L.a1.armLen, l2: L.a2.armLen } : null,
+    worldPoints: W ? {
+      O: W.O.toArray(),
+      p1: W.p1.toArray(),
+      p2: W.p2.toArray(),
+    } : null,
     pointsFinite: !!(L &&
       Number.isFinite(L.O.x) && Number.isFinite(L.O.y) &&
       Number.isFinite(L.p1.x) && Number.isFinite(L.p1.y) &&
