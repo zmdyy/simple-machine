@@ -263,6 +263,27 @@
     S.el('rect', { x: p.x + 22, y: p.y - 11, width: 12, height: 22, rx: 3, fill: '#334155' }, layer);
   }
 
+  function outlinedLabel(layer, x, y, text, color, anchor, size) {
+    const fs = size || 15;
+    const ta = anchor || 'middle';
+    S.el('text', {
+      x, y, fill: '#fff', stroke: '#fff', 'stroke-width': fs * 0.30,
+      'font-size': fs, 'font-weight': 800, 'text-anchor': ta,
+      'paint-order': 'stroke',
+    }, layer).textContent = text;
+    S.el('text', {
+      x, y, fill: color, 'font-size': fs, 'font-weight': 800,
+      'text-anchor': ta,
+    }, layer).textContent = text;
+  }
+
+  function drawCalfArmLabels(layer, g) {
+    const m1 = K.add(g.O, K.scale(K.sub(g.a1.foot, g.O), 0.58));
+    const m2 = K.add(g.O, K.scale(K.sub(g.a2.foot, g.O), 0.52));
+    outlinedLabel(layer, m1.x, m1.y - 24, 'l₁', C.arm1, 'middle', 16);
+    outlinedLabel(layer, m2.x, m2.y + 30, 'l₂', C.arm2, 'middle', 16);
+  }
+
   function drawAbstractModel(layer, g) {
     S.el('rect', {
       x: 24, y: 20, width: 752, height: 372, rx: 18,
@@ -285,8 +306,10 @@
     S.drawForceArrow(layer, g.p2, g.d2, 72, C.F2, 'F₂', { O: g.O });
     S.drawForceLine(layer, g.p1, g.d1, 190);
     S.drawForceLine(layer, g.p2, g.d2, 190);
-    S.drawArm(layer, g.O, g.a1.foot, 'l₁', false, C.arm1, g.d1);
-    S.drawArm(layer, g.O, g.a2.foot, 'l₂', false, C.arm2, g.d2);
+    const calf = ex().id === 'calf';
+    S.drawArm(layer, g.O, g.a1.foot, calf ? '' : 'l₁', false, C.arm1, g.d1);
+    S.drawArm(layer, g.O, g.a2.foot, calf ? '' : 'l₂', false, C.arm2, g.d2);
+    if (calf) drawCalfArmLabels(layer, g);
 
     S.el('text', {
       x: 44, y: 52, fill: '#0f766e', 'font-size': 20, 'font-weight': 800,
@@ -353,20 +376,26 @@
       const px1 = 46 + Math.min(92, Math.sqrt(Math.max(g.f1, 1)) * 4.2);
       S.drawForceArrow(
         Ldraw, g.p1, g.d1, px1, C.F1,
-        e.id === 'calf' ? 'F₁' : ('F₁≈' + g.f1.toFixed(0) + ' N'),
-        { O: g.O, scale: 1.05, labelOffset: e.id === 'calf' ? 82 : 68 }
+        e.id === 'calf' ? '' : ('F₁≈' + g.f1.toFixed(0) + ' N'),
+        { O: g.O, scale: 1.05, labelOffset: 68 }
       );
+      if (e.id === 'calf') {
+        outlinedLabel(Ldraw, g.p1.x + 74, g.p1.y - 92,
+          'F₁≈' + g.f1.toFixed(0) + ' N', C.F1, 'start', 15);
+      }
       if (e.id === 'curl' || e.id === 'calf') {
         S.el('circle', {
           cx: g.p1.x, cy: g.p1.y, r: 5,
           fill: C.F1, stroke: '#fff', 'stroke-width': 2,
         }, Ldraw);
-        S.el('text', {
-          x: e.id === 'calf' ? g.p1.x + 18 : g.p1.x + 12,
-          y: e.id === 'calf' ? g.p1.y + 30 : g.p1.y + 18,
-          fill: C.F1, 'font-size': 13, 'font-weight': 800,
-          stroke: '#fff', 'stroke-width': 4, 'paint-order': 'stroke',
-        }, Ldraw).textContent = e.id === 'curl' ? '动力点' : '跟腱动力点';
+        if (e.id === 'curl' || step === 3) {
+          S.el('text', {
+            x: e.id === 'calf' ? g.p1.x + 18 : g.p1.x + 12,
+            y: e.id === 'calf' ? g.p1.y + 30 : g.p1.y + 18,
+            fill: C.F1, 'font-size': 13, 'font-weight': 800,
+            stroke: '#fff', 'stroke-width': 4, 'paint-order': 'stroke',
+          }, Ldraw).textContent = e.id === 'curl' ? '动力点' : '跟腱动力点';
+        }
       }
     }
 
@@ -374,30 +403,38 @@
       const px2 = 72;
       S.drawForceArrow(
         Ldraw, g.p2, g.d2, px2, C.F2,
-        e.id === 'calf' ? 'F₂' : ('F₂=' + g.f2 + ' N'),
-        { O: g.O, labelOffset: e.id === 'calf' ? 78 : 62 }
+        e.id === 'calf' ? '' : ('F₂=' + g.f2 + ' N'),
+        { O: g.O, labelOffset: 62 }
       );
+      if (e.id === 'calf') {
+        outlinedLabel(Ldraw, g.p2.x + 54, g.p2.y + 60,
+          'F₂=' + g.f2 + ' N', C.F2, 'start', 15);
+      }
       drawDumbbell(Ldraw, g.p2);
       if (e.id === 'curl' || e.id === 'calf') {
         S.el('circle', {
           cx: g.p2.x, cy: g.p2.y, r: 5,
           fill: C.F2, stroke: '#fff', 'stroke-width': 2,
         }, Ldraw);
-        S.el('text', {
-          x: e.id === 'calf' ? g.p2.x - 24 : g.p2.x + 16,
-          y: e.id === 'calf' ? g.p2.y - 24 : g.p2.y - 14,
-          fill: C.F2, 'font-size': 13, 'font-weight': 800,
-          stroke: '#fff', 'stroke-width': 4, 'paint-order': 'stroke',
-          'text-anchor': e.id === 'calf' ? 'end' : 'start',
-        }, Ldraw).textContent = e.id === 'curl' ? '阻力点' : '重力作用点';
+        if (e.id === 'curl' || step === 4) {
+          S.el('text', {
+            x: e.id === 'calf' ? g.p2.x - 24 : g.p2.x + 16,
+            y: e.id === 'calf' ? g.p2.y - 24 : g.p2.y - 14,
+            fill: C.F2, 'font-size': 13, 'font-weight': 800,
+            stroke: '#fff', 'stroke-width': 4, 'paint-order': 'stroke',
+            'text-anchor': e.id === 'calf' ? 'end' : 'start',
+          }, Ldraw).textContent = e.id === 'curl' ? '阻力点' : '重力作用点';
+        }
       }
     }
 
     if (step >= 5) {
       S.drawForceLine(Ldraw, g.p1, g.d1, 190);
       S.drawForceLine(Ldraw, g.p2, g.d2, 190);
-      S.drawArm(Ldraw, g.O, g.a1.foot, 'l₁', false, C.arm1, g.d1);
-      S.drawArm(Ldraw, g.O, g.a2.foot, 'l₂', false, C.arm2, g.d2);
+      const calf = e.id === 'calf';
+      S.drawArm(Ldraw, g.O, g.a1.foot, calf ? '' : 'l₁', false, C.arm1, g.d1);
+      S.drawArm(Ldraw, g.O, g.a2.foot, calf ? '' : 'l₂', false, C.arm2, g.d2);
+      if (calf) drawCalfArmLabels(Ldraw, g);
       if (K.dist(g.O, g.a1.foot) > 4) {
         S.drawRightAngle(Ldraw, g.a1.foot, K.sub(g.a1.foot, g.O), g.d1, 8, C.arm1);
       }
