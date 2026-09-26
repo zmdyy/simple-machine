@@ -280,8 +280,8 @@ function setPose(actionId, t) {
     if (rig.axis === 'x') pivot.rotation.x = ang;
     else if (rig.axis === 'y') pivot.rotation.y = ang;
     else pivot.rotation.z = ang;
-    // 踮脚：脚跟抬起方向与模型轴向可能相反，取负
-    if (actionId === 'calf') pivot.rotation.x = -ang;
+    // 踮脚：随参数增大让跟骨/踝部向上抬起。
+    if (actionId === 'calf') pivot.rotation.x = ang;
     if (actionId === 'neck') pivot.rotation.x = ang;
   }
 
@@ -840,6 +840,7 @@ function debugSnapshot() {
   const focus = rig ? actionFocusMeshes(rig) : [];
   const movable = rig ? findMeshes(rig.movable || [], rig.singleSide !== false, rig.sideSign) : [];
   const L = state.ready ? getLandmarks() : null;
+  const W = (state.ready && rig) ? rig.landmarks(makeCtx(state.t)) : null;
   const box = rig ? focusBounds(rig) : null;
   const center = box ? box.getCenter(new THREE.Vector3()) : null;
 
@@ -870,6 +871,11 @@ function debugSnapshot() {
     movableSize: movableSize ? movableSize.toArray() : null,
     movableSideXs: movable.map((m) => meshCenter(m).x),
     arms: L ? { l1: L.a1.armLen, l2: L.a2.armLen } : null,
+    worldPoints: W ? {
+      O: W.O.toArray(),
+      p1: W.p1.toArray(),
+      p2: W.p2.toArray(),
+    } : null,
     pointsFinite: !!(L &&
       Number.isFinite(L.O.x) && Number.isFinite(L.O.y) &&
       Number.isFinite(L.p1.x) && Number.isFinite(L.p1.y) &&
