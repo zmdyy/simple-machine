@@ -11,7 +11,8 @@ on:
       - 'js/body-scenes.js'
       - 'css/app.css'
       - 'index.html'
-      - 'qa/body-curl-qa.mjs'\n      - 'qa/body-calf-qa.mjs'
+      - 'qa/body-curl-qa.mjs'
+      - 'qa/body-calf-qa.mjs'
   workflow_dispatch:
 
 jobs:
