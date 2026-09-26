@@ -161,6 +161,20 @@ main {
 .body3d-stage.practice > svg {
   pointer-events: auto;
 }
+
+.body3d-stage.abstract-mode > canvas {
+  opacity: 0.16;
+  filter: saturate(0.45);
+}
+.body3d-stage > canvas {
+  transition: opacity 0.22s ease, filter 0.22s ease;
+}
+#bodyTemplateCard .task-card-body {
+  margin: 0;
+}
+#bodyTemplateCard .task-card-known {
+  margin-top: 2px;
+}
 .body3d-pick {
   position: absolute;
   left: 12px;
