@@ -1,9 +1,9 @@
 name: Body Curl Internal QA
 
 on:
-  push:
+  pull_request:
     branches:
-      - body-curl-review-20260926
+      - main
     paths:
       - 'js/body-3d.js'
       - 'js/body-lab.js'
@@ -12,7 +12,6 @@ on:
       - 'css/app.css'
       - 'index.html'
       - 'qa/body-curl-qa.mjs'
-      - '.github/workflows/body-curl-qa.yml'
   workflow_dispatch:
 
 jobs:
@@ -33,7 +32,7 @@ jobs:
 
       - name: Start local site
         run: |
-          python3 -m http.server 5500 > /tmp/simple-machine-server.log 2>&1 &
+          python3 -m http.server 5500 > simple-machine-server.log 2>&1 &
           sleep 2
 
       - name: Run body curl QA
@@ -46,5 +45,5 @@ jobs:
           name: body-curl-qa
           path: |
             qa-artifacts
-            /tmp/simple-machine-server.log
+            simple-machine-server.log
           if-no-files-found: warn
