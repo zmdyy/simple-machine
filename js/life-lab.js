@@ -234,12 +234,12 @@
       stages: true,
       defaultT: 0.15,
       getGeom(t) {
-        const P = (u, v) => K.v(120 + u * 560, 4 + v * 560 * (882 / 1200));
+        const P = (u, v) => K.v(172 + u * 456, 12 + v * 456 * (826 / 942));
 
         if (t < 1 / 3) {
-          const O = P(603 / 2048, 966 / 1505);
-          const hand = P(1323 / 2048, 244 / 1505);
-          const load = P(561 / 2048, 915 / 1505);
+          const O = P(0.150, 0.672);
+          const hand = P(0.732, 0.195);
+          const load = P(0.108, 0.610);
           return {
             O, bar: [load, O, hand],
             p1: hand, d1: K.v(0, 1),
@@ -251,9 +251,9 @@
         }
 
         if (t < 2 / 3) {
-          const O = P(0.920, 0.635);
-          const input = P(0.240, 0.727);
-          const tip = P(0.050, 0.768);
+          const O = P(0.897, 0.521);
+          const input = P(0.403, 0.593);
+          const tip = P(0.048, 0.751);
           return {
             O, bar: [tip, input, O],
             p1: input, d1: K.v(0, 1),
@@ -264,9 +264,9 @@
           };
         }
 
-        const O = P(0.920, 0.635);
-        const input = P(0.240, 0.832);
-        const tip = P(0.050, 0.867);
+        const O = P(0.897, 0.521);
+        const input = P(0.424, 0.714);
+        const tip = P(0.053, 0.823);
         return {
           O, bar: [tip, input, O],
           p1: input, d1: K.v(0, -1),

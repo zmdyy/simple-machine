@@ -3,3 +3,8 @@ Source: https://commons.wikimedia.org/wiki/File:Claw-hammer.jpg
 Author: Evan-Amos
 License: Public domain (released by author)
 Processed: white background removed, rotated for nail-pulling pose
+
+nailclipper.png
+Source: https://unsplash.com/photos/gray-nail-clipper-7Mo838geKCQ
+License: Unsplash License
+Processed: white background removed to RGBA PNG
