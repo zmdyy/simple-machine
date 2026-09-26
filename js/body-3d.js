@@ -169,9 +169,16 @@ function restoreMeshHome(m) {
   m.updateMatrix();
 }
 
+function restoreMeshHome(m) {
+  if (!m || !m.userData.restParent) return;
+  m.userData.restParent.add(m);
+  if (m.userData.restLocal) m.position.copy(m.userData.restLocal);
+  if (m.userData.restQuat) m.quaternion.copy(m.userData.restQuat);
+  if (m.userData.restScale) m.scale.copy(m.userData.restScale);
+  m.updateMatrix();
+}
+
 function clearPivots() {
-  // 先把所有网格精确恢复到模型初始层级/局部姿态，再删除临时关节。
-  // 这比 root.attach 回去更稳定，可避免“curl → 其他动作 → curl”后发生姿态烘焙或漂移。
   meshes.forEach(restoreMeshHome);
 
   Object.keys(pivots).forEach((id) => {
@@ -341,12 +348,12 @@ function storeRestPose() {
     m.userData.restQuat = m.quaternion.clone();
     m.userData.restScale = m.scale.clone();
 
-    const c = meshCenter(m);
-    const dir = c.clone().sub(origin);
+    const center = meshCenter(m);
+    const dir = center.clone().sub(origin);
     if (dir.lengthSq() < 1e-6) dir.set(0, 1, 0);
     else dir.normalize();
     m.userData.explodeDir = dir;
-    m.userData.restWorld = c.clone();
+    m.userData.restWorld = center.clone();
   });
 }
 
