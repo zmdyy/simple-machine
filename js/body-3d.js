@@ -145,9 +145,14 @@ function makeCtx(t) {
 }
 
 function clearPivots() {
+  // 先把临时关节恢复到 0°，再把子网格挂回根节点。
+  // 否则 root.attach 会把“当前动作姿态”永久烘焙到网格世界变换里，
+  // 多次切换动作后就会出现手臂/腿漂到身体其他位置。
   Object.keys(pivots).forEach((id) => {
     const p = pivots[id];
     if (!p) return;
+    p.rotation.set(0, 0, 0);
+    p.updateMatrixWorld(true);
     while (p.children.length) {
       const ch = p.children[0];
       root.attach(ch);
@@ -156,14 +161,12 @@ function clearPivots() {
   });
   pivots = {};
   if (kneePivot) {
+    kneePivot.rotation.set(0, 0, 0);
+    kneePivot.updateMatrixWorld(true);
     while (kneePivot.children.length) root.attach(kneePivot.children[0]);
     if (kneePivot.parent) kneePivot.parent.remove(kneePivot);
     kneePivot = null;
   }
-  meshes.forEach((m) => {
-    m.userData.homePos = m.position.clone();
-    m.userData.homeQuat = m.quaternion.clone();
-  });
 }
 
 function buildPivotFor(actionId) {
@@ -184,7 +187,9 @@ function buildPivotFor(actionId) {
   pivot.position.copy(pivotPos);
   root.add(pivot);
 
-  const movable = findMeshes(rig.movable, false);
+  // 固定动作模板默认只驱动一侧肢体。BodyParts3D 的另一侧网格常以 .001 等后缀区分。
+  // 之前这里 sidePrefer=false 会把左右两侧前臂同时绑到同一个肘关节，导致另一侧肢体飞离身体。
+  const movable = findMeshes(rig.movable, rig.singleSide !== false);
   movable.forEach((m) => {
     // 避免把枢轴骨本身绑进会转的组导致漂移：枢轴参考网格仍可高亮但不强制排除
     pivot.attach(m);
@@ -199,7 +204,7 @@ function buildPivotFor(actionId) {
     kneePivot.name = 'pivot_knee';
     kneePivot.position.copy(kp);
     root.add(kneePivot);
-    findMeshes(rig.kneeMovable, false).forEach((m) => kneePivot.attach(m));
+    findMeshes(rig.kneeMovable, rig.singleSide !== false).forEach((m) => kneePivot.attach(m));
   }
 }
 
@@ -261,8 +266,9 @@ function applyFocusDim() {
     let opacity = rig && rig.dimOpacity != null ? rig.dimOpacity : MAT.dim;
     const name = m.name || '';
     const detail = (m.userData && (m.userData.nameDetail || m.userData.name)) || '';
-    const inFocus = focus && (R().matchAny(name, focus) || R().matchAny(detail, focus));
-    const hi = hiMus && (R().matchAny(name, hiMus) || R().matchAny(detail, hiMus));
+    const sideOk = !rig || rig.singleSide === false || R().preferSide(name);
+    const inFocus = sideOk && focus && (R().matchAny(name, focus) || R().matchAny(detail, focus));
+    const hi = sideOk && hiMus && (R().matchAny(name, hiMus) || R().matchAny(detail, hiMus));
     if (inFocus) opacity = MAT.focus;
     if (hi) {
       opacity = 1;
@@ -305,14 +311,55 @@ function storeRestPose() {
   });
 }
 
+function actionFocusMeshes(rig) {
+  if (!rig || !rig.focusPatterns) return [];
+  return findMeshes(rig.focusPatterns, rig.singleSide !== false);
+}
+
+function focusBounds(rig) {
+  const list = actionFocusMeshes(rig);
+  if (!list.length) return null;
+  const box = new THREE.Box3();
+  list.forEach((m) => {
+    m.updateWorldMatrix(true, false);
+    box.expandByObject(m);
+  });
+  return box.isEmpty() ? null : box;
+}
+
 function flyToAction(actionId) {
   const rig = R().RIGS[actionId];
   if (!rig || !camera || !controls) return;
-  const p = rig.camera.position;
-  const t = rig.camera.target;
-  camera.position.set(p[0], p[1], p[2]);
-  controls.target.set(t[0], t[1], t[2]);
-  camera.fov = rig.camera.fov || 42;
+
+  const fov = (rig.camera && rig.camera.fov) || 42;
+  const box = focusBounds(rig);
+  if (box) {
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    const radius = Math.max(size.x, size.y, size.z) * 0.5;
+    const refPos = new THREE.Vector3(...rig.camera.position);
+    const refTarget = new THREE.Vector3(...rig.camera.target);
+    let viewDir = refPos.sub(refTarget);
+    if (viewDir.lengthSq() < 1e-6) viewDir.set(1, 0.15, 0.45);
+    viewDir.normalize();
+
+    const fovRad = THREE.MathUtils.degToRad(fov);
+    const distance = Math.max(
+      rig.camera.minDistance || 0.42,
+      (radius / Math.max(Math.tan(fovRad / 2), 0.2)) * (rig.camera.fitPadding || 1.35)
+    );
+    controls.target.copy(center);
+    camera.position.copy(center).add(viewDir.multiplyScalar(distance));
+    controls.minDistance = Math.max(0.25, distance * 0.42);
+    controls.maxDistance = Math.max(2.5, distance * 4.5);
+  } else {
+    const p = rig.camera.position;
+    const t = rig.camera.target;
+    camera.position.set(p[0], p[1], p[2]);
+    controls.target.set(t[0], t[1], t[2]);
+  }
+
+  camera.fov = fov;
   camera.updateProjectionMatrix();
   controls.update();
 }
@@ -698,6 +745,31 @@ function setAction(actionId, t) {
   setStepReveal(state.step, state.practice);
 }
 
+function debugSnapshot() {
+  const rig = R().RIGS[state.actionId];
+  const pivot = pivots[state.actionId] || null;
+  const focus = rig ? actionFocusMeshes(rig) : [];
+  const movable = rig ? findMeshes(rig.movable || [], rig.singleSide !== false) : [];
+  const L = state.ready ? getLandmarks() : null;
+  const box = rig ? focusBounds(rig) : null;
+  const center = box ? box.getCenter(new THREE.Vector3()) : null;
+  return {
+    ready: state.ready,
+    actionId: state.actionId,
+    focusCount: focus.length,
+    movableCount: movable.length,
+    pivotChildCount: pivot ? pivot.children.length : 0,
+    focusCenter: center ? center.toArray() : null,
+    cameraTarget: controls ? controls.target.toArray() : null,
+    cameraPosition: camera ? camera.position.toArray() : null,
+    arms: L ? { l1: L.a1.armLen, l2: L.a2.armLen } : null,
+    pointsFinite: !!(L &&
+      Number.isFinite(L.O.x) && Number.isFinite(L.O.y) &&
+      Number.isFinite(L.p1.x) && Number.isFinite(L.p1.y) &&
+      Number.isFinite(L.p2.x) && Number.isFinite(L.p2.y)),
+  };
+}
+
 function dispose() {
   cancelAnimationFrame(raf);
   if (resizeObs) resizeObs.disconnect();
@@ -715,6 +787,7 @@ const Body3D = {
   setStepReveal,
   setOverlayFlags,
   getLandmarks,
+  debugSnapshot,
   isReady: () => state.ready,
   resize,
   onPick(fn) {
