@@ -303,7 +303,16 @@
     if (status && ready3d) status.textContent = e.anatomy;
 
     // 分步揭示：1 解剖；2 O；3 F₁；4 F₂；5 力臂；6 动态；7 抽象。
-    if (step >= 2) S.drawPivot(Ldraw, g.O);
+    if (step >= 2) {
+      S.drawPivot(Ldraw, g.O);
+      if (e.id === 'curl') {
+        S.el('text', {
+          x: g.O.x + 12, y: g.O.y - 14,
+          fill: '#111827', 'font-size': 15, 'font-weight': 800,
+          stroke: '#fff', 'stroke-width': 4, 'paint-order': 'stroke',
+        }, Ldraw).textContent = '肘关节 O';
+      }
+    }
 
     if (step >= 3) {
       const px1 = 46 + Math.min(92, Math.sqrt(Math.max(g.f1, 1)) * 4.2);
@@ -312,6 +321,13 @@
         'F₁ ' + g.f1.toFixed(0) + ' N（示意）',
         { O: g.O, scale: 1.08 }
       );
+      if (e.id === 'curl') {
+        S.el('text', {
+          x: g.p1.x + 14, y: g.p1.y + 22,
+          fill: C.F1, 'font-size': 14, 'font-weight': 800,
+          stroke: '#fff', 'stroke-width': 4, 'paint-order': 'stroke',
+        }, Ldraw).textContent = '肱二头肌牵拉桡骨';
+      }
     }
 
     if (step >= 4) {
@@ -322,6 +338,13 @@
         { O: g.O }
       );
       drawDumbbell(Ldraw, g.p2);
+      if (e.id === 'curl') {
+        S.el('text', {
+          x: g.p2.x + 22, y: g.p2.y + 24,
+          fill: C.F2, 'font-size': 14, 'font-weight': 800,
+          stroke: '#fff', 'stroke-width': 4, 'paint-order': 'stroke',
+        }, Ldraw).textContent = '哑铃重力';
+      }
     }
 
     if (step >= 5) {
