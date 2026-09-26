@@ -73,20 +73,23 @@
         /humerus/i, /radius/i, /ulna/i, /biceps brachii/i, /brachialis/i,
         /metacarpal/i, /scapula/i, /forearm/i,
       ],
-      pivotFrom: [/trochlea of humerus/i, /capitulum of humerus/i, /head of radius/i, /humerus(?!\.)/i],
+      pivotFrom: [/trochlea of humerus/i, /capitulum of humerus/i, /head of radius/i, /olecranon/i],
       movable: [
         /radius/i, /ulna/i, /metacarpal/i, /phalanx of.*(hand|finger(?! of foot))/i,
         /carpal/i, /scaphoid/i, /lunate/i, /bones of hand/i, /hand bone/i,
       ],
       highlightMuscle: [/biceps brachii/i, /brachialis/i, /short head of biceps/i, /long head of biceps brachii/i],
       axis: 'z',
-      angleMin: 0.05,
-      angleMax: 1.45,
+      angleMin: 0.12,
+      angleMax: 1.35,
       landmarks(ctx) {
         const O = ctx.pivotWorld.clone();
         const grip = ctx.centerOf([/third metacarpal/i, /metacarpal bones/i, /first metacarpal/i]) || O.clone().add(ctx.v(0, -0.28, 0.05));
-        const insert = ctx.centerOf([/tuberosity of radius/i, /radius(?!\.)/i]) || O.clone().lerp(grip, 0.4);
-        const belly = ctx.centerOf([/biceps brachii/i, /short head of biceps brachii/i]) || O.clone().add(ctx.v(0.02, 0.08, 0.04));
+        // 桡骨粗隆是肱二头肌主要止点。找不到命名网格时，用靠近肘部的前臂位置回退，
+        // 不再用整根桡骨中心，避免把动力作用点错误推到前臂中段。
+        const insert = ctx.centerOf([/tuberosity of radius/i]) || O.clone().lerp(grip, 0.18);
+        const belly = ctx.centerOf([/biceps brachii/i, /short head of biceps brachii/i, /long head of biceps brachii/i]) ||
+          O.clone().add(ctx.v(0.02, 0.11, 0.04));
         return {
           O,
           p1: insert,
