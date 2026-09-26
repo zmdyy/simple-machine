@@ -84,7 +84,7 @@
     const deg = (0.45 - t) * 28;
     return {
       box: { x, y, w: destW, h: destH, deg, O: O0 },
-      geom: pack(O0, rot(ins0, O0, deg), K.v(-0.15, -1), rot(grip0, O0, deg), K.v(0, 1), [O0, rot(grip0, O0, deg)], 80, {
+      geom: pack(O0, rot(ins0, O0, deg), K.v(-0.15, -1), rot(grip0, O0, deg), K.v(0, 1), [O0, rot(grip0, O0, deg)], 50, {
         caption: '举哑铃，只析肘：肘是支点，肱二头肌拉前臂，哑铃重力在握点竖直向下',
       }),
     };
