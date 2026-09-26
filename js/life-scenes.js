@@ -267,39 +267,28 @@
       });
     },
     nailclipper(t) {
-      // Unsplash 白底开合指甲剪抠透明 PNG：942×826，完整落入 800×420。
       const x = 172;
       const y = 12;
       const w = 456;
       const h = w * (826 / 942);
       const P = (u, v) => K.v(x + u * w, y + v * h);
 
-      if (t < 1 / 3) {
-        const O = P(0.150, 0.672);   // 支点：圆柱销
-        const p1 = P(0.732, 0.195);  // 动力 A：压柄沟槽，手向下压
-        const p2 = P(0.108, 0.610);  // 阻力 B：短臂压在上刀口处
-        return pack(O, p1, K.v(0, 1), p2, K.v(0, 1), [p2, O, p1], 20, {
-          stageName: '① 压柄：第一类杠杆（省力）',
-          caption: '指甲剪①压柄：圆柱销是支点 O，手在柄端向下压为动力 A，短臂压上刀口为阻力 B。',
-        });
-      }
+      // 第一张标注图校准后的关键点：
+      // O：绿色支点；A：红色动力点；B：蓝色阻力点。
+      const O = P(0.18610, 0.76313);
+      const A = P(0.76955, 0.09543);
+      const B = P(0.15204, 0.71721);
 
-      if (t < 2 / 3) {
-        const O = P(0.897, 0.521);
-        const p1 = P(0.403, 0.593);
-        const p2 = P(0.048, 0.751);
-        return pack(O, p1, K.v(0, 1), p2, K.v(0, -1), [p2, p1, O], 35, {
-          stageName: '② 上刀口：第三类杠杆（费力）',
-          caption: '指甲剪②上刀口：尾部连接处是支点 O，传递力作用在中间，刀口在最前端。',
-        });
-      }
+      // 参数阶段只改变手按压的位置。t=1 时严格回到标注图中的 A 点。
+      const near = P(0.400, 0.500);
+      const tt = Math.max(0, Math.min(1, t == null ? 1 : t));
+      const p1 = K.v(
+        near.x + (A.x - near.x) * tt,
+        near.y + (A.y - near.y) * tt
+      );
 
-      const O = P(0.897, 0.521);
-      const p1 = P(0.424, 0.714);
-      const p2 = P(0.053, 0.823);
-      return pack(O, p1, K.v(0, -1), p2, K.v(0, 1), [p2, p1, O], 35, {
-        stageName: '③ 下刀口：第三类杠杆（费力）',
-        caption: '指甲剪③下刀口：尾部连接处是支点 O，中间受力，前端刀口对指甲作用。',
+      return pack(O, p1, K.v(0, 1), B, K.v(0, 1), [B, O, p1], 20, {
+        caption: '指甲剪：O 与阻力点 B 很近但不是同一点；手在 A 附近向下压，短臂处受到向下阻力。',
       });
     },
   };
@@ -436,33 +425,28 @@
       const w = 456;
       const bar = fit(
         g,
-        'assets/life/nailclipper.png',
+        'assets/life/nailclipper.png?v=20260926a',
         942, 826,
         172, 12,
         w
       );
 
-      let O, p1, p2;
-      if (t < 1 / 3) {
-        O = bar.p(0.150, 0.672);
-        p1 = bar.p(0.732, 0.195);
-        p2 = bar.p(0.108, 0.610);
-      } else if (t < 2 / 3) {
-        O = bar.p(0.897, 0.521);
-        p1 = bar.p(0.403, 0.593);
-        p2 = bar.p(0.048, 0.751);
-      } else {
-        O = bar.p(0.897, 0.521);
-        p1 = bar.p(0.424, 0.714);
-        p2 = bar.p(0.053, 0.823);
-      }
+      const O = bar.p(0.18610, 0.76313);
+      const A = bar.p(0.76955, 0.09543);
+      const B = bar.p(0.15204, 0.71721);
+      const near = bar.p(0.400, 0.500);
+      const tt = Math.max(0, Math.min(1, t == null ? 1 : t));
+      const p1 = K.v(
+        near.x + (A.x - near.x) * tt,
+        near.y + (A.y - near.y) * tt
+      );
 
-      if (step >= 2) tag(g, O, '支点 O', -10, -14);
+      if (step >= 2) tag(g, O, '支点 O', 16, 30);
       if (step >= 3) {
-        tag(g, p1, '动力点', 12, -12);
-        tag(g, p2, '阻力点', 10, 18);
+        tag(g, p1, '手按 · 动力点', 14, -12);
+        tag(g, B, '短臂 · 阻力点', -112, -8);
       }
-      axis(g, [p2, p1, O], showAxis);
+      axis(g, [B, O, p1], showAxis);
     }
 
     if (L.caption) caption(g, L.caption);
