@@ -1,4 +1,5 @@
-// 踮脚样板：自动验证第二类杠杆关系、局部聚焦、足部转动和小腿随动。\nimport { chromium } from 'playwright';
+// 踮脚样板：自动验证第二类杠杆关系、局部聚焦、足部转动和小腿随动。
+import { chromium } from 'playwright';
 import fs from 'node:fs';
 
 const OUT = 'qa-artifacts-calf';
