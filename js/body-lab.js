@@ -314,7 +314,7 @@
       S.drawPivot(Ldraw, g.O);
       if (e.id === 'curl') {
         S.el('text', {
-          x: g.O.x + 12, y: g.O.y - 14,
+          x: g.O.x + 34, y: g.O.y - 28,
           fill: '#111827', 'font-size': 15, 'font-weight': 800,
           stroke: '#fff', 'stroke-width': 4, 'paint-order': 'stroke',
         }, Ldraw).textContent = '肘关节 O';
@@ -325,8 +325,8 @@
       const px1 = 46 + Math.min(92, Math.sqrt(Math.max(g.f1, 1)) * 4.2);
       S.drawForceArrow(
         Ldraw, g.p1, g.d1, px1, C.F1,
-        'F₁ ' + g.f1.toFixed(0) + ' N（示意）',
-        { O: g.O, scale: 1.08 }
+        'F₁≈' + g.f1.toFixed(0) + ' N',
+        { O: g.O, scale: 1.05, labelOffset: 68 }
       );
       if (e.id === 'curl') {
         S.el('circle', {
@@ -345,8 +345,8 @@
       const px2 = 72;
       S.drawForceArrow(
         Ldraw, g.p2, g.d2, px2, C.F2,
-        'F₂ ' + g.f2 + ' N',
-        { O: g.O }
+        'F₂=' + g.f2 + ' N',
+        { O: g.O, labelOffset: 62 }
       );
       drawDumbbell(Ldraw, g.p2);
       if (e.id === 'curl') {
