@@ -15,12 +15,15 @@
     {
       id: 'calf',
       presetId: 'calf',
-      name: '踮脚',
+      name: '踮脚（样板）',
+      sample: true,
+      leverType: '第二类杠杆（省力）',
+      abstractSummary: '前脚掌 O｜跟腱拉力 F₁｜身体重力 F₂｜阻力点位于 O 与动力点之间 → 第二类杠杆',
       action: '观察：踮起脚跟（前脚掌着地）',
-      whyO: '前脚掌着地并约束足部转动，可作为支点 O；跟腱向上拉脚跟，身体重力向下。',
-      anatomy: '局部聚焦：胫骨、腓骨、跟骨、距骨、跖骨；腓肠肌和比目鱼肌经跟腱提供动力。',
+      whyO: '前脚掌着地点可简化为支点 O；小腿三头肌经跟腱向上拉跟骨，身体重力经踝部向下。',
+      anatomy: '自动聚焦：胫骨、腓骨、距骨、跟骨、跖骨与趾骨；重点高亮腓肠肌和比目鱼肌。',
       paramLabel: '踮起幅度',
-      filmTip: '侧拍整脚与小腿；慢踮 5–8 秒；关节别裁出画外。',
+      filmTip: '侧拍整脚与小腿；慢慢踮起脚跟，前脚掌保持接触地面。',
       fallback(t) {
         const gy = 360;
         const O = K.v(390, gy);
@@ -39,6 +42,7 @@
       name: '举哑铃（样板）',
       sample: true,
       leverType: '第三类杠杆（费力）',
+      abstractSummary: '肘关节 O｜肱二头肌 F₁｜哑铃重力 F₂｜动力点位于 O 与阻力点之间 → 第三类杠杆',
       action: '观察：屈肘举哑铃',
       whyO: '肘关节是转动枢纽 O；肱二头肌在靠近肘部的位置牵拉桡骨，哑铃重力作用在手部。',
       anatomy: '自动聚焦：肱骨、尺骨、桡骨、手部骨骼；重点高亮肱二头肌和肱肌。',
@@ -188,25 +192,45 @@
   }
 
   function stepHint(e, step, g) {
-    if (e.id !== 'curl') {
-      return '当前动作保留为后续模板。先用“举哑铃”验证人体杠杆完整流程。';
-    }
     const ratio = g.a1.armLen > 1e-6 ? g.a2.armLen / g.a1.armLen : Infinity;
-    const hints = {
-      1: '先观察局部解剖：前臂会绕肘关节运动，肱二头肌被重点高亮。',
-      2: '支点 O：肘关节。先只确认“绕哪里转”。',
-      3: '动力 F₁：肱二头肌经肌腱牵拉桡骨。红色箭头表示肌肉拉力方向。',
-      4: '阻力 F₂：哑铃重力竖直向下。这里按约 5 kg、50 N 做示意。',
-      5: '现在看两条力臂：l₁、l₂ 都是从 O 到对应作用线的垂直距离。',
-      6: '拖动屈肘角度或点“播放动作”，观察肌肉方向、l₁、l₂ 与所需 F₁ 如何一起变化。',
-      7: '简化成杠杆后，只保留 O、F₁、F₂、l₁、l₂。真实人体结构与抽象杠杆在同一位置对应。',
-    };
-    let msg = hints[step] || '';
-    if (step >= 5 && isFinite(ratio)) {
-      msg += ' 当前 l₂/l₁ ≈ ' + ratio.toFixed(2) +
-        '，维持平衡所需 F₁ ≈ ' + g.f1.toFixed(0) + ' N（简化示意）。';
+
+    if (e.id === 'curl') {
+      const hints = {
+        1: '先观察局部解剖：前臂会绕肘关节运动，肱二头肌被重点高亮。',
+        2: '支点 O：肘关节。先只确认“绕哪里转”。',
+        3: '动力 F₁：肱二头肌经肌腱牵拉桡骨。红色箭头表示肌肉拉力方向。',
+        4: '阻力 F₂：哑铃重力竖直向下。这里按约 5 kg、50 N 做示意。',
+        5: '现在看两条力臂：l₁、l₂ 都是从 O 到对应作用线的垂直距离。',
+        6: '拖动屈肘角度或点“播放动作”，观察肌肉方向、l₁、l₂ 与所需 F₁ 如何一起变化。',
+        7: '简化成杠杆后，只保留 O、F₁、F₂、l₁、l₂。真实人体结构与抽象杠杆在同一位置对应。',
+      };
+      let msg = hints[step] || '';
+      if (step >= 5 && isFinite(ratio)) {
+        msg += ' 当前 l₂/l₁ ≈ ' + ratio.toFixed(2) +
+          '，维持平衡所需 F₁ ≈ ' + g.f1.toFixed(0) + ' N（简化示意）。';
+      }
+      return msg;
     }
-    return msg;
+
+    if (e.id === 'calf') {
+      const hints = {
+        1: '先观察局部解剖：前脚掌保持着地，脚跟抬起；腓肠肌和比目鱼肌被重点高亮。',
+        2: '支点 O：前脚掌着地点（跖趾关节附近）。这是足部绕地面转动的简化枢轴。',
+        3: '动力 F₁：小腿三头肌经跟腱向上拉跟骨。红色箭头表示跟腱拉力的方向。',
+        4: '阻力 F₂：身体重力经踝部向下作用。这里取约 600 N 作课堂示意。',
+        5: '比较两条力臂：动力臂 l₁ 大于阻力臂 l₂，因此这是典型的第二类杠杆。',
+        6: '拖动“踮起幅度”或播放动作，观察脚跟升高时两条作用线、力臂和所需 F₁ 的变化。',
+        7: '简化成杠杆后，只保留前脚掌 O、跟腱 F₁、身体重力 F₂ 和两条力臂，仍能对应真实人体结构。',
+      };
+      let msg = hints[step] || '';
+      if (step >= 5 && isFinite(ratio)) {
+        msg += ' 当前 l₂/l₁ ≈ ' + ratio.toFixed(2) +
+          '，维持平衡所需 F₁ ≈ ' + g.f1.toFixed(0) + ' N；F₁ 小于 F₂，体现“省力但费距离”。';
+      }
+      return msg;
+    }
+
+    return '当前动作保留为后续模板。已完成“举哑铃”和“踮脚”两个样板。';
   }
 
   function updateTemplateCard() {
@@ -217,7 +241,7 @@
     const anatomy = document.getElementById('bodyTemplateAnatomy');
     const lever = document.getElementById('bodyTemplateLever');
     const note = document.getElementById('bodyTemplateNote');
-    if (title) title.textContent = e.sample ? '举哑铃 · 人体杠杆动作模板' : e.name + ' · 待完善模板';
+    if (title) title.textContent = e.sample ? e.name.replace('（样板）', '') + ' · 人体杠杆动作模板' : e.name + ' · 待完善模板';
     if (anatomy) anatomy.textContent = t
       ? '骨骼：' + t.bones + '；肌肉：' + t.muscles + '；关节：' + t.joint + '。'
       : e.anatomy;
@@ -267,7 +291,7 @@
     }, layer).textContent = '从人体结构抽象成杠杆';
     S.el('text', {
       x: 44, y: 78, fill: '#475569', 'font-size': 13, 'font-weight': 600,
-    }, layer).textContent = '肘关节 O｜肱二头肌 F₁｜哑铃重力 F₂｜动力点位于 O 与阻力点之间 → 第三类杠杆';
+    }, layer).textContent = ex().abstractSummary || 'O、F₁、F₂ 与两条力臂保持和真实结构中的位置对应。';
   }
 
   function render() {
@@ -312,12 +336,12 @@
     // 分步揭示：1 解剖；2 O；3 F₁；4 F₂；5 力臂；6 动态；7 抽象。
     if (step >= 2) {
       S.drawPivot(Ldraw, g.O);
-      if (e.id === 'curl') {
+      if (e.id === 'curl' || e.id === 'calf') {
         S.el('text', {
           x: g.O.x + 34, y: g.O.y - 28,
           fill: '#111827', 'font-size': 15, 'font-weight': 800,
           stroke: '#fff', 'stroke-width': 4, 'paint-order': 'stroke',
-        }, Ldraw).textContent = '肘关节 O';
+        }, Ldraw).textContent = e.id === 'curl' ? '肘关节 O' : '前脚掌 O';
       }
     }
 
@@ -328,7 +352,7 @@
         'F₁≈' + g.f1.toFixed(0) + ' N',
         { O: g.O, scale: 1.05, labelOffset: 68 }
       );
-      if (e.id === 'curl') {
+      if (e.id === 'curl' || e.id === 'calf') {
         S.el('circle', {
           cx: g.p1.x, cy: g.p1.y, r: 5,
           fill: C.F1, stroke: '#fff', 'stroke-width': 2,
@@ -337,7 +361,7 @@
           x: g.p1.x + 12, y: g.p1.y + 18,
           fill: C.F1, 'font-size': 13, 'font-weight': 800,
           stroke: '#fff', 'stroke-width': 4, 'paint-order': 'stroke',
-        }, Ldraw).textContent = '动力点';
+        }, Ldraw).textContent = e.id === 'curl' ? '动力点' : '跟腱动力点';
       }
     }
 
@@ -349,7 +373,7 @@
         { O: g.O, labelOffset: 62 }
       );
       drawDumbbell(Ldraw, g.p2);
-      if (e.id === 'curl') {
+      if (e.id === 'curl' || e.id === 'calf') {
         S.el('circle', {
           cx: g.p2.x, cy: g.p2.y, r: 5,
           fill: C.F2, stroke: '#fff', 'stroke-width': 2,
@@ -358,7 +382,7 @@
           x: g.p2.x + 16, y: g.p2.y - 14,
           fill: C.F2, 'font-size': 13, 'font-weight': 800,
           stroke: '#fff', 'stroke-width': 4, 'paint-order': 'stroke',
-        }, Ldraw).textContent = '阻力点';
+        }, Ldraw).textContent = e.id === 'curl' ? '阻力点' : '重力作用点';
       }
     }
 
