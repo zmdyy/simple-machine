@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+import { createCurlRig, isCurlStructure } from './curl-rig.js';
 
 const LOCAL_GLB = 'assets/anatomy/body.glb';
 const CDN_GLB =
@@ -38,6 +39,7 @@ let meshes = [];
 let pivots = {};
 let followGroups = {};
 let kneePivot = null;
+let curlRig = null;
 let overlayGroup;
 let clock;
 let raf = 0;
@@ -172,6 +174,7 @@ function restoreMeshHome(m) {
 
 
 function clearPivots() {
+  if (curlRig) { curlRig.dispose(); curlRig = null; }
   meshes.forEach(restoreMeshHome);
 
   Object.keys(pivots).forEach((id) => {
@@ -197,6 +200,12 @@ function buildPivotFor(actionId) {
   if (!rig || !modelRoot) return;
 
   clearPivots();
+
+  if (actionId === 'curl') {
+    curlRig = createCurlRig({ root, modelRoot, meshes });
+    pivots.curl = curlRig.pivot;
+    return;
+  }
 
   const pivotSources = findMeshes(rig.pivotFrom, true, rig.sideSign);
   let pivotPos = centerOfMeshes(pivotSources);
@@ -258,6 +267,13 @@ function setPose(actionId, t) {
   const pivot = pivots[actionId];
   if (!pivot) return;
 
+  if (actionId === 'curl' && curlRig) {
+    curlRig.update(t);
+    applyFocusDim();
+    drawOverlay3D();
+    return;
+  }
+
   pivot.rotation.set(0, 0, 0);
   if (kneePivot) kneePivot.rotation.set(0, 0, 0);
 
@@ -313,6 +329,14 @@ function applyFocusDim() {
     m.visible = !!show;
     if (!show) return;
 
+    if (state.actionId === 'curl') {
+      m.visible = m.userData.restWorld.x > .05 && isCurlStructure(m);
+      const mat = m.userData.baseMat || m.material;
+      mat.opacity = 1; mat.transparent = false; mat.depthWrite = true;
+      mat.emissive.set(0x000000); mat.emissiveIntensity = 0;
+      return;
+    }
+
     const mat = m.userData.baseMat || m.material;
     if (!mat || !mat.color) return;
 
@@ -357,6 +381,9 @@ function applyFocusDim() {
 
 function applyExplode(amount) {
   state.explode = amount;
+  // Exploding only the stationary meshes breaks the calibrated muscle attachments.
+  // The curl template is observed by orbiting and toggling layers instead.
+  if (state.actionId === 'curl') return;
   const k = amount / 100;
   meshes.forEach((m) => {
     if (!m.userData.restWorld) return;
@@ -389,6 +416,7 @@ function storeRestPose() {
 
 function actionFocusMeshes(rig) {
   if (!rig || !rig.focusPatterns) return [];
+  if (rig.id === 'curl') return meshes.filter(m => m.userData.restWorld.x > .05 && isCurlStructure(m));
   return findMeshes(rig.focusPatterns, rig.singleSide !== false, rig.sideSign);
 }
 
@@ -412,7 +440,10 @@ function flyToAction(actionId) {
   if (box) {
     const center = box.getCenter(new THREE.Vector3());
     const size = box.getSize(new THREE.Vector3());
-    const radius = Math.max(size.x, size.y, size.z) * 0.5;
+    // The extended arm is taller than the initial flexed pose. Keep enough room
+    // for the complete motion, including fingertips, without cropping at t=0.
+    const radius = rig.id === 'curl' ? Math.max(.44, Math.max(size.x, size.y, size.z) * .5)
+      : Math.max(size.x, size.y, size.z) * 0.5;
     const refPos = new THREE.Vector3(...rig.camera.position);
     const refTarget = new THREE.Vector3(...rig.camera.target);
     let viewDir = refPos.sub(refTarget);
@@ -457,6 +488,14 @@ function worldToSvg(v3) {
   const w = canvasEl.clientWidth || 1;
   const h = canvasEl.clientHeight || 1;
   const v = v3.clone().project(camera);
+  const svg = document.getElementById('bodySvg');
+  const ctm = svg && svg.getScreenCTM();
+  if (ctm) {
+    const rect = canvasEl.getBoundingClientRect();
+    const p = new DOMPoint(rect.left + (v.x + 1) * .5 * w,
+      rect.top + (1 - v.y) * .5 * h).matrixTransform(ctm.inverse());
+    return { x: p.x, y: p.y, behind: v.z > 1 };
+  }
   return {
     x: ((v.x + 1) / 2) * 800,
     y: ((1 - v.y) / 2) * 420,
@@ -487,7 +526,7 @@ function getLandmarks() {
   const rig = R().RIGS[state.actionId];
   if (!rig || !state.ready) return null;
   const ctx = makeCtx(state.t);
-  const L = rig.landmarks(ctx);
+  const L = state.actionId === 'curl' && curlRig ? curlRig.landmarks() : rig.landmarks(ctx);
   const loadDir = (L.d2 || new THREE.Vector3(0, -1, 0)).clone().normalize();
 
   // 先在三维世界坐标里完成物理计算，再投影到屏幕。
@@ -654,6 +693,7 @@ function resize() {
   camera.updateProjectionMatrix();
   renderer.setSize(w, h, false);
   drawOverlay3D();
+  if (state.ready && window.BodyLab) window.BodyLab.render();
 }
 
 function animate() {
@@ -745,6 +785,15 @@ async function init() {
   controls.minDistance = 0.35;
   controls.maxDistance = 5;
   controls.target.set(0, 0, 0);
+  let projectionFrame = 0;
+  controls.addEventListener('change', () => {
+    if (projectionFrame || !state.ready) return;
+    projectionFrame = requestAnimationFrame(() => {
+      projectionFrame = 0;
+      // SVG labels and the dumbbell must follow the camera, not just pose edits.
+      if (stageEl && stageEl.offsetParent && window.BodyLab) window.BodyLab.render();
+    });
+  });
 
   root = new THREE.Group();
   scene.add(root);
@@ -838,9 +887,9 @@ function debugSnapshot() {
   const rig = R().RIGS[state.actionId];
   const pivot = pivots[state.actionId] || null;
   const focus = rig ? actionFocusMeshes(rig) : [];
-  const movable = rig ? findMeshes(rig.movable || [], rig.singleSide !== false, rig.sideSign) : [];
+  const movable = state.actionId === 'curl' && curlRig ? curlRig.moving : rig ? findMeshes(rig.movable || [], rig.singleSide !== false, rig.sideSign) : [];
   const L = state.ready ? getLandmarks() : null;
-  const W = (state.ready && rig) ? rig.landmarks(makeCtx(state.t)) : null;
+  const W = (state.ready && rig) ? (state.actionId === 'curl' && curlRig ? curlRig.landmarks() : rig.landmarks(makeCtx(state.t))) : null;
   const box = rig ? focusBounds(rig) : null;
   const center = box ? box.getCenter(new THREE.Vector3()) : null;
 
@@ -858,6 +907,12 @@ function debugSnapshot() {
 
   return {
     ready: state.ready,
+    assembly: curlRig ? curlRig.diagnostics() : null,
+    screenPoints: W ? Object.fromEntries(['O','p1','p2'].map(key => {
+      const p=W[key].clone().project(camera);
+      return [key, { x:(p.x+1)*.5*canvasEl.clientWidth,
+        y:(1-p.y)*.5*canvasEl.clientHeight }];
+    })) : null,
     actionId: state.actionId,
     focusCount: focus.length,
     movableCount: movable.length,

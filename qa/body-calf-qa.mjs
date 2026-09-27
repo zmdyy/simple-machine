@@ -1,12 +1,14 @@
 // 踮脚样板：自动验证第二类杠杆关系、局部聚焦、足部转动和小腿随动。
 import { chromium } from 'playwright';
 import fs from 'node:fs';
+import { localThree } from './local-three.mjs';
 
 const OUT = 'qa-artifacts-calf';
 fs.mkdirSync(OUT, { recursive: true });
 
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
+await localThree(page);
 const consoleErrors = [];
 page.on('pageerror', (err) => consoleErrors.push('pageerror: ' + err.message));
 page.on('console', (msg) => {

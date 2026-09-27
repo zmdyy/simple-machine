@@ -96,10 +96,10 @@
       focusOnlyHighlightedMuscle: true,
       trackFocus: true,
       camera: {
-        position: [1.28, 0.12, 0.50],
+        position: [-1.0, 0.08, 0.85],
         target: [0.32, 0.02, 0],
         fov: 32,
-        fitPadding: 0.92,
+        fitPadding: 1.08,
         minDistance: 0.34,
       },
       dimOpacity: 0.01,
@@ -109,39 +109,17 @@
         muscles: '肱二头肌、肱肌（主要示意）',
         effort: '肱二头肌经肌腱牵拉桡骨，形成动力 F₁',
         load: '手持约 5 kg 哑铃，重力约 50 N（示意值）',
-        note: '简化模型忽略前臂和手自身重力，只突出肘关节、肌肉拉力与哑铃重力。',
+        note: '固定上臂、保持前臂旋后，单独观察屈肘。肌肉变形为教学示意；忽略前臂和手自身重力。',
       },
-      focusPatterns: [
-        /humerus/i, /radius/i, /ulna/i, /biceps brachii/i, /brachialis/i,
-        /metacarpal/i, /scapula/i, /clavicle/i,
-      ],
-      pivotFrom: [/trochlea of humerus/i, /capitulum of humerus/i, /head of radius/i, /olecranon/i],
-      movable: [
-        /radius/i, /ulna/i, /metacarpal/i, /phalanx of.*(hand|finger(?! of foot))/i,
-        /carpal/i, /scaphoid/i, /lunate/i, /bones of hand/i, /hand bone/i,
-      ],
-      highlightMuscle: [/biceps brachii/i, /brachialis/i, /short head of biceps/i, /long head of biceps brachii/i],
-      axis: 'z',
-      angleMin: 0.12,
-      angleMax: 1.35,
-      landmarks(ctx) {
-        const O = ctx.pivotWorld.clone();
-        const grip = ctx.centerOf([/third metacarpal/i, /metacarpal bones/i, /first metacarpal/i]) || O.clone().add(ctx.v(0, -0.28, 0.05));
-        // 桡骨粗隆是肱二头肌主要止点。找不到命名网格时，用靠近肘部的前臂位置回退，
-        // 不再用整根桡骨中心，避免把动力作用点错误推到前臂中段。
-        const insert = ctx.centerOf([/tuberosity of radius/i]) || O.clone().lerp(grip, 0.18);
-        const belly = ctx.centerOf([/biceps brachii/i, /short head of biceps brachii/i, /long head of biceps brachii/i]) ||
-          O.clone().add(ctx.v(0.02, 0.11, 0.04));
-        return {
-          O,
-          p1: insert,
-          d1: ctx.dir(insert, belly),
-          p2: grip,
-          d2: ctx.v(0, -1, 0),
-          f2: 50,
-          bar: [O, grip],
-        };
-      },
+      // curl-rig.js binds an explicit bone inventory and calibrated surface attachments.
+      focusPatterns: [/humerus/i, /radius/i, /ulna/i, /biceps brachii/i, /^brachialis muscle/i,
+        /metacarpal/i, /scapula/i, /clavicle/i, /phalanx of.*hand/i,
+        /scaphoid bone|lunate bone|triquetrum bone|pisiform bone|trapezium bone|trapezoid bone|capitate bone|hamate bone/i],
+      // Intentionally no generic pivot/landmark fallback: a missing calibrated rig is an error.
+      pivotFrom: [],
+      movable: [],
+      highlightMuscle: [/biceps brachii/i, /^brachialis muscle/i],
+      landmarks() { throw new Error('举哑铃需要已校准的动作模板'); },
     },
 
     neck: {

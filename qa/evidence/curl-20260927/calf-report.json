@@ -1,0 +1,60 @@
+{
+  "passed": true,
+  "consoleErrors": [],
+  "poses": [
+    {
+      "name": "calf-low",
+      "t": 0.08,
+      "focusCount": 46,
+      "movableCount": 29,
+      "followCount": 19,
+      "arms": {
+        "l1": 0.1363754388614442,
+        "l2": 0.1194828516908187
+      },
+      "followOffset": [
+        0,
+        0.005171403136469022,
+        0.0021367446355154626
+      ],
+      "cameraTargetDistance": 0
+    },
+    {
+      "name": "calf-mid",
+      "t": 0.5,
+      "focusCount": 46,
+      "movableCount": 29,
+      "followCount": 19,
+      "arms": {
+        "l1": 0.13327020548696372,
+        "l2": 0.11233207090147748
+      },
+      "followOffset": [
+        0,
+        0.019399211215542667,
+        0.009486493664119272
+      ],
+      "cameraTargetDistance": 0
+    },
+    {
+      "name": "calf-high",
+      "t": 0.92,
+      "focusCount": 46,
+      "movableCount": 29,
+      "followCount": 19,
+      "arms": {
+        "l1": 0.1284092633825916,
+        "l2": 0.10353689828916564
+      },
+      "followOffset": [
+        0,
+        0.03259060835005334,
+        0.01856594161859525
+      ],
+      "cameraTargetDistance": 1.4304896245381992e-17
+    }
+  ],
+  "switchStable": true,
+  "cameraInvariant": true,
+  "secondClassRelation": true
+}

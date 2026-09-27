@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - 'js/body-3d.js'
+      - 'js/curl-rig.js'
+      - 'qa/local-three.mjs'
       - 'js/body-lab.js'
       - 'js/anatomy-rigs.js'
       - 'js/body-scenes.js'
@@ -28,7 +30,7 @@ jobs:
 
       - name: Install Playwright
         run: |
-          npm install --no-save playwright@1.55.0
+          npm install --no-save playwright@1.55.0 three@0.160.0
           npx playwright install --with-deps chromium
 
       - name: Start local site

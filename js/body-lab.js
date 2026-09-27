@@ -237,6 +237,13 @@
     const e = ex();
     const rig = rigInfo();
     const t = rig && rig.teaching;
+    const explode = document.getElementById('bodyExplode');
+    if (explode) {
+      explode.disabled = e.id === 'curl';
+      explode.closest('label').title = e.id === 'curl'
+        ? '举哑铃保持肌腱连接，请旋转视角或切换骨、肌观察'
+        : '分离骨骼与肌肉便于观察';
+    }
     const title = document.getElementById('bodyTemplateTitle');
     const anatomy = document.getElementById('bodyTemplateAnatomy');
     const lever = document.getElementById('bodyTemplateLever');
@@ -360,8 +367,8 @@
 
     // 分步揭示：1 解剖；2 O；3 F₁；4 F₂；5 力臂；6 动态；7 抽象。
     if (step >= 2) {
-      // 踮脚另用左侧“前脚掌 O”说明，避免与 drawPivot 默认的 O 重复。
-      S.drawPivot(Ldraw, g.O, e.id === 'calf' ? ' ' : undefined);
+      // 已有解剖名称的支点不再重复绘制默认的 O。
+      S.drawPivot(Ldraw, g.O, e.id === 'calf' || e.id === 'curl' ? ' ' : undefined);
       if (e.id === 'curl' || e.id === 'calf') {
         S.el('text', {
           x: e.id === 'calf' ? g.O.x - 28 : g.O.x + 34,

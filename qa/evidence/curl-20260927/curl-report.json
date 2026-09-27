@@ -1,0 +1,147 @@
+{
+  "passed": true,
+  "consoleErrors": [],
+  "poses": [
+    {
+      "name": "curl-low",
+      "t": 0,
+      "focusCount": 35,
+      "movableCount": 29,
+      "pivotChildCount": 29,
+      "arms": {
+        "l1": 0.02667281099157053,
+        "l2": 0.10771148279871179
+      },
+      "assembly": {
+        "calibrated": true,
+        "movingBones": 29,
+        "carpals": 8,
+        "phalanges": 14,
+        "attachmentError": 0.000021607633200057486,
+        "surfaceAttachmentError": 0.0000048744087489979525,
+        "proximalDrift": 0,
+        "axis": [
+          -0.9982048454657787,
+          -0.05989229072794672,
+          0
+        ],
+        "radialInsertion": [
+          0.23938589942186347,
+          1.0608565080401176,
+          -0.014362658224227986
+        ],
+        "ulnarInsertion": [
+          0.2237914224677402,
+          1.0647240464013505,
+          -0.030030194107567923
+        ],
+        "muscleNames": [
+          "long head of biceps brachii",
+          "short head of biceps brachii",
+          "brachialis muscle"
+        ],
+        "tendonLength": 0.062410366145886645,
+        "hiddenMovingBones": 0
+      },
+      "cameraTargetDistance": 2.7755575615628914e-17,
+      "minMovableX": 0.2293380429707237
+    },
+    {
+      "name": "curl-mid",
+      "t": 0.5,
+      "focusCount": 35,
+      "movableCount": 29,
+      "pivotChildCount": 29,
+      "arms": {
+        "l1": 0.046962452792253404,
+        "l2": 0.3011433928982287
+      },
+      "assembly": {
+        "calibrated": true,
+        "movingBones": 29,
+        "carpals": 8,
+        "phalanges": 14,
+        "attachmentError": 0.000021618388536470763,
+        "surfaceAttachmentError": 0.0000026432659870546105,
+        "proximalDrift": 0,
+        "axis": [
+          -0.9982048454657787,
+          -0.05989229072794672,
+          0
+        ],
+        "radialInsertion": [
+          0.23938589942186347,
+          1.0608565080401176,
+          -0.014362658224227986
+        ],
+        "ulnarInsertion": [
+          0.2237914224677402,
+          1.0647240464013505,
+          -0.030030194107567923
+        ],
+        "muscleNames": [
+          "long head of biceps brachii",
+          "short head of biceps brachii",
+          "brachialis muscle"
+        ],
+        "tendonLength": 0.062410366145886687,
+        "hiddenMovingBones": 0
+      },
+      "cameraTargetDistance": 0,
+      "minMovableX": 0.2111477348497458
+    },
+    {
+      "name": "curl-high",
+      "t": 1,
+      "focusCount": 35,
+      "movableCount": 29,
+      "pivotChildCount": 29,
+      "arms": {
+        "l1": 0.030537129948282508,
+        "l2": 0.21252543672497778
+      },
+      "assembly": {
+        "calibrated": true,
+        "movingBones": 29,
+        "carpals": 8,
+        "phalanges": 14,
+        "attachmentError": 0.00002158723465385374,
+        "surfaceAttachmentError": 0.00001661222576579102,
+        "proximalDrift": 0,
+        "axis": [
+          -0.9982048454657787,
+          -0.05989229072794672,
+          0
+        ],
+        "radialInsertion": [
+          0.23938589942186347,
+          1.0608565080401176,
+          -0.014362658224227986
+        ],
+        "ulnarInsertion": [
+          0.2237914224677402,
+          1.0647240464013505,
+          -0.030030194107567923
+        ],
+        "muscleNames": [
+          "long head of biceps brachii",
+          "short head of biceps brachii",
+          "brachialis muscle"
+        ],
+        "tendonLength": 0.06241036614588681,
+        "hiddenMovingBones": 0
+      },
+      "cameraTargetDistance": 0,
+      "minMovableX": 0.18999630029288908
+    }
+  ],
+  "switchStable": true,
+  "cameraInvariant": true,
+  "sweepPoses": 21,
+  "maxSurfaceError": 0.00001661222576579102,
+  "overlayErrors": {
+    "initial": 2.0495186137532014e-13,
+    "rotated": 0.17421703226435595,
+    "resized": 0.07541931338577976
+  }
+}
