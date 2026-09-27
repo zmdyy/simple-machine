@@ -28,7 +28,6 @@ let state = {
   t: 0.45,
   showBone: true,
   showMuscle: true,
-  explode: 0,
   step: 1,
   practice: false,
   overlay: { showO: false, showF: false, showArm: false, showBar: false },
@@ -379,26 +378,7 @@ function applyFocusDim() {
   });
 }
 
-function applyExplode(amount) {
-  state.explode = amount;
-  // Exploding only the stationary meshes breaks the calibrated muscle attachments.
-  // The curl template is observed by orbiting and toggling layers instead.
-  if (state.actionId === 'curl') return;
-  const k = amount / 100;
-  meshes.forEach((m) => {
-    if (!m.userData.restWorld) return;
-    // 仅对未挂在关节下的、或爆炸时相对根偏移
-    if (m.parent && m.parent.name &&
-        (m.parent.name.indexOf('pivot_') === 0 || m.parent.name.indexOf('follow_') === 0)) return;
-    const rest = m.userData.restLocal;
-    const out = m.userData.explodeDir;
-    if (!rest || !out) return;
-    m.position.copy(rest).addScaledVector(out, k * 0.55);
-  });
-}
-
 function storeRestPose() {
-  const origin = new THREE.Vector3();
   meshes.forEach((m) => {
     m.userData.restParent = m.parent;
     m.userData.restLocal = m.position.clone();
@@ -406,10 +386,6 @@ function storeRestPose() {
     m.userData.restScale = m.scale.clone();
 
     const center = meshCenter(m);
-    const dir = center.clone().sub(origin);
-    if (dir.lengthSq() < 1e-6) dir.set(0, 1, 0);
-    else dir.normalize();
-    m.userData.explodeDir = dir;
     m.userData.restWorld = center.clone();
   });
 }
@@ -879,7 +855,6 @@ function setAction(actionId, t) {
   setPose(actionId, state.t);
   if (changed) flyToAction(actionId);
   else trackActionFocus(actionId);
-  applyExplode(state.explode);
   setStepReveal(state.step, state.practice);
 }
 
@@ -948,10 +923,6 @@ const Body3D = {
   setAction,
   setPose,
   setLayers,
-  setExplode: (v) => {
-    state.explode = +v || 0;
-    applyExplode(state.explode);
-  },
   setStepReveal,
   setOverlayFlags,
   getLandmarks,

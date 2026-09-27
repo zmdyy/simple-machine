@@ -140,6 +140,38 @@ main {
   background: #faf9f6;
   overflow: hidden;
 }
+.body-actions {
+  flex-shrink: 0;
+  padding: 10px;
+  border-bottom: 1px solid var(--stroke);
+  background: #f0f7f5;
+}
+.body-actions-title {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 700;
+}
+#bodyList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+#bodyList .life-item {
+  flex: 1 1 150px;
+  width: auto;
+}
+#labBody > .stage { min-width: 0; }
+@media (max-width: 900px) {
+  #labBody.active {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  #labBody > .stage { flex: 0 0 580px; }
+  #labBody > .side { flex: 0 0 auto; overflow: visible; }
+}
 .body3d-stage > canvas {
   position: absolute;
   inset: 0;
@@ -246,18 +278,6 @@ main {
   align-items: center;
 }
 #vidAdvancedToolbar[hidden] { display: none !important; }
-.toolbar-slider {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--muted);
-  font-weight: 600;
-}
-.toolbar-slider input[type="range"] {
-  width: 88px;
-  vertical-align: middle;
-}
 .body-attr {
   font-size: 11px !important;
   opacity: 0.85;

@@ -237,13 +237,6 @@
     const e = ex();
     const rig = rigInfo();
     const t = rig && rig.teaching;
-    const explode = document.getElementById('bodyExplode');
-    if (explode) {
-      explode.disabled = e.id === 'curl';
-      explode.closest('label').title = e.id === 'curl'
-        ? '举哑铃保持肌腱连接，请旋转视角或切换骨、肌观察'
-        : '分离骨骼与肌肉便于观察';
-    }
     const title = document.getElementById('bodyTemplateTitle');
     const anatomy = document.getElementById('bodyTemplateAnatomy');
     const lever = document.getElementById('bodyTemplateLever');
@@ -339,7 +332,7 @@
 
     const e = ex();
     const step = state.step;
-    const abstractNow = state.abstract || step >= 7;
+    const abstractNow = state.abstract;
     const stage = document.getElementById('body3dStage');
     if (stage) stage.classList.toggle('abstract-mode', abstractNow);
 
@@ -485,11 +478,15 @@
     if (po) po.textContent = state.t.toFixed(2);
 
     const absBtn = document.getElementById('bodyAbstract');
-    if (absBtn) absBtn.classList.toggle('active-toggle', abstractNow);
+    if (absBtn) {
+      absBtn.classList.toggle('active-toggle', abstractNow);
+      absBtn.textContent = abstractNow ? '恢复肌肉骨骼' : '简化成杠杆';
+      absBtn.setAttribute('aria-pressed', String(abstractNow));
+    }
     const playBtn = document.getElementById('bodyPlay');
     if (playBtn) playBtn.textContent = state.playing ? '暂停动作' : '播放动作';
 
-    setJudge(stepHint(e, step, g), step >= 5 ? true : null);
+    setJudge(step === 7 && !abstractNow ? '已恢复肌肉骨骼视图，可再次简化，对照观察同一位置的支点、作用点和力臂。' : stepHint(e, step, g), step >= 5 ? true : null);
   }
 
   function stopMotion() {
@@ -542,7 +539,6 @@
     state.bound3d = true;
     const bone = document.getElementById('bodyToggleBone');
     const mus = document.getElementById('bodyToggleMuscle');
-    const exp = document.getElementById('bodyExplode');
 
     if (bone) {
       bone.onclick = () => {
@@ -558,11 +554,6 @@
         mus.dataset.on = on ? '1' : '0';
         mus.classList.toggle('active-toggle', on);
         if (global.Body3D) Body3D.setLayers({ muscle: on });
-      };
-    }
-    if (exp) {
-      exp.oninput = () => {
-        if (global.Body3D) Body3D.setExplode(+exp.value);
       };
     }
   }
@@ -622,14 +613,17 @@
 
     if (prev) prev.onclick = () => {
       state.step = Math.max(1, state.step - 1);
+      state.abstract = false;
       render();
     };
     if (next) next.onclick = () => {
       state.step = Math.min(STEPS, state.step + 1);
+      state.abstract = state.step === STEPS;
       render();
     };
     if (skip) skip.onclick = () => {
       state.step = 5;
+      state.abstract = false;
       render();
     };
     if (play) play.onclick = toggleMotion;
@@ -656,8 +650,7 @@
     waitBody3D(() => {
       render();
       if (global.Body3D && Body3D.isReady()) {
-        Body3D.setAction('curl', state.t);
-        setJudge('举哑铃样板已加载：先观察肱骨、尺骨、桡骨、肱二头肌和肘关节。', true);
+        Body3D.setAction(ex().id, state.t);
       }
     });
   }

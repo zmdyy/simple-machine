@@ -149,7 +149,7 @@ try {
   await snap('curl-resized');
   await page.setViewportSize({width:1440,height:900});
   await page.waitForTimeout(500);
-  assert(await page.locator('#bodyExplode').isDisabled(),'curl should keep attachments assembled');
+  assert(await page.locator('#bodyExplode').count() === 0,'unused explode control should be removed');
   await page.click('#bodyToggleBone');
   assert(await page.evaluate(() => Body3D.debugSnapshot().assembly.hiddenMovingBones) === 29,
     'bone toggle left wrist/hand bones visible');

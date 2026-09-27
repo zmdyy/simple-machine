@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "widths": [
+    1440,
+    1024,
+    900,
+    768
+  ],
+  "actions": [
+    "calf",
+    "curl",
+    "neck",
+    "lift"
+  ],
+  "abstractRoundTrips": 4,
+  "seventhStepRecovery": true,
+  "explodeRemoved": true,
+  "switchingStopsPlayback": true,
+  "pageErrors": []
+}
