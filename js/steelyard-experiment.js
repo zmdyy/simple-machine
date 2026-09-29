@@ -28,6 +28,18 @@
       const move = clamp((p-.35)/.5);
       return {mass, x:position(c,.2)+position(c,.1)*move, old:position(c,.2), done:p===1};
     }
+    if(selected===2) {
+      const originalMass=limit(base);
+      if(!changed)return {mass:originalMass,x:c.travel,arm:base.arm,tilt:0,done:p===1};
+      const shift=clamp((p-.12)/.30);
+      const loading=clamp((p-.52)/.38);
+      const arm=base.arm+(c.arm-base.arm)*shift;
+      const mass=originalMass+(limit(c)-originalMass)*loading;
+      // 倾角仅表达失衡趋势；挂钩移动和加物重分两段，终态满足力矩相等。
+      const momentGap=c.poise*c.travel-mass*arm;
+      const maxGap=c.poise*c.travel-originalMass*c.arm;
+      return {mass,x:c.travel,arm,tilt:4*clamp(momentGap/maxGap),done:p===1};
+    }
     const start = limit(base), end = limit(choices.range[selected]);
     const mass = start + (end-start)*clamp((p-.18)/.65);
     // 最后明确将原秤恢复至其最大可称质量，随后展示各自上限。
@@ -37,11 +49,12 @@
   }
   function row(c, changed, y, p) {
     const a = sample(c,changed,p), ox=265, color=changed?'#0f766e':'#475569';
-    const tilt = a.over ? -5 : mode==='precision' && p>=.18 && p<.85 ? -4*(1-clamp((p-.35)/.5)) : 0;
+    const arm=a.arm==null?c.arm:a.arm;
+    const tilt = a.tilt!=null ? a.tilt : a.over ? -5 : mode==='precision' && p>=.18 && p<.85 ? -4*(1-clamp((p-.35)/.5)) : 0;
     const rad=tilt*Math.PI/180;
     const point = x => [ox+x*Math.cos(rad),y+x*Math.sin(rad)];
-    const hook=point(-c.arm), poise=point(a.x), end=point(c.travel);
-    let s = text(32,y-48,changed?'改变后的杆秤':'原来的杆秤',23,color);
+    const hook=point(-arm), poise=point(a.x), end=point(c.travel);
+    let s = `<g data-experiment-row="${changed?'changed':'base'}" data-mass="${a.mass}" data-arm="${arm}" data-poise-position="${a.x}" data-tilt="${tilt}">`+text(32,y-48,changed?'改变后的杆秤':'原来的杆秤',23,color);
     s += text(310,y-48,`秤砣 ${fmt(c.poise*1000)} g`,20,color);
     if(changed) s+=text(950,y-48,choices[mode][selected].name,20,color,'end');
     s+=line(ox,y-42,ox,y,'#64748b',4);
@@ -51,17 +64,18 @@
     s+=line(ox+c.travel,y-12,ox+c.travel,y+12,color,4);
     s+=`</g><circle cx="${ox}" cy="${y}" r="7" fill="#0f766e"/>`;
     s+=text(ox-10,y-15,'支点',18,'#0f766e','end');
+    const loadY=hook[1];
     const count = Math.max(1,Math.ceil(a.mass/(mode==='precision'?.1:.5)-1e-8));
-    s+=line(hook[0],hook[1],hook[0],y+40-(count-1)*5,'#64748b');
-    for(let i=0;i<count;i++) s+=`<rect x="${hook[0]-35}" y="${y+40-i*5}" width="70" height="5" rx="2" fill="${i%2?'#94a3b8':'#64748b'}"/>`;
-    s+=text(hook[0],y+76,mode==='precision'?`${fmt(a.mass*1000)} g`:`${fmt(a.mass)} kg`,25,'#1e293b','middle');
-    if(mode==='precision' && p>=.18)s+=text(hook[0]+52,y+76,'＋100 g',20,'#c2410c');
+    s+=line(hook[0],hook[1],hook[0],loadY+40-(count-1)*5,'#64748b');
+    for(let i=0;i<count;i++) s+=`<rect x="${hook[0]-35}" y="${loadY+40-i*5}" width="70" height="5" rx="2" fill="${i%2?'#94a3b8':'#64748b'}"/>`;
+    s+=text(hook[0],loadY+76,mode==='precision'?`${fmt(a.mass*1000)} g`:`${fmt(a.mass)} kg`,25,'#1e293b','middle');
+    if(mode==='precision' && p>=.18)s+=text(hook[0]+52,loadY+76,'＋100 g',20,'#c2410c');
     const size=17*Math.sqrt(c.poise/base.poise);
     s+=line(poise[0],poise[1],poise[0],poise[1]+25,color);
     s+=`<path d="M${poise[0]-size} ${poise[1]+25} l${-size*.4} 26 q${size*1.4} 12 ${size*2.8} 0 l${-size*.4} -26 Z" fill="${color}"/>`;
     if(mode==='range') {
       s+=text(end[0],y-20,'移动终点',17,color,'middle');
-      s+=text(950,y+95,a.over?'超过量程':a.done?`最多称 ${fmt(limit(c))} kg`:'平衡',a.done?27:22,a.over?'#b91c1c':color,'end');
+      s+=text(950,y+95,a.over?'超过量程':a.done?`最多称 ${fmt(limit(c))} kg`:tilt>0.01?'秤砣端下沉':'平衡',a.done?27:22,a.over?'#b91c1c':color,'end');
     } else if(p>=.35) {
       const old=ox+a.old, now=ox+a.x;
       s+=line(old,y,old,y+50,'#94a3b8',2,'stroke-dasharray="4 4"');
@@ -70,10 +84,12 @@
       if(a.done)s+=text(now+12,y+85,'移动距离',18,color);
     }
     if(c.arm!==base.arm || (selected===1 && mode==='precision') || (selected===2 && mode==='range')) {
-      s+=line(ox-c.arm,y-30,ox,y-30,color,2);
-      s+=text(ox-c.arm/2,y-35,changed?(c.arm>base.arm?'距离增大':'距离缩短'):'原距离',16,color,'middle');
+      s+=`<g transform="rotate(${tilt} ${ox} ${y})">`;
+      s+=line(ox-arm,y-30,ox,y-30,color,2);
+      s+=text(ox-arm/2,y-35,Math.abs(arm-base.arm)<.001?'原距离':arm>base.arm?'距离增大':'距离缩短',16,color,'middle');
+      s+='</g>';
     }
-    return s;
+    return s+'</g>';
   }
   function draw() {
     const changed=choices[mode][selected], done=progress===1;
@@ -84,6 +100,7 @@
     phase.textContent= mode==='precision'
       ? progress===0?'两把秤都已平衡：物体质量为200 g':progress<.35?'同时增加100 g，原来的平衡被打破':!done?'移动秤砣，重新达到平衡':''
       : progress===0?'原秤已到最大称量值；改进后的秤砣还能向外移动':progress<.94?'同步增加质量：观察哪把秤还能保持平衡':'恢复至各自最大可称质量，比较量程';
+    if(mode==='range' && selected===2) phase.textContent=progress<.12?'① 原来平衡：两把秤的秤砣都已在最右端':progress<.52?'② 挂钩向提钮靠近，物重不变，秤砣端下沉':progress<.90?'③ 挂钩停住，逐渐增加物重，恢复水平':'重新平衡：秤砣仍在最右端，最大可称质量增大';
     panel.querySelector('.experiment-result').hidden=!done || mode==='precision';
     phase.hidden=done && mode==='precision';
     panel.querySelector('.experiment-result').textContent=mode==='precision'
