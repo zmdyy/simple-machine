@@ -743,3 +743,29 @@ table.data-table tr.ok-row td { background: #ecfdf5; }
     grid-template-columns: 1fr;
   }
 }
+
+/* 杆秤拓展：主图区专注同步实验，侧栏只保留案例与模式切换。 */
+#labLife.experiment-open { grid-template-columns: minmax(0, 1fr) 210px; }
+#labLife.experiment-open .stage > .stage-toolbar,
+#labLife.experiment-open #lifeSvg,
+#labLife.experiment-open .side > :not(h2):not(#lifeList):not(#steelyardPanel),
+#labLife.experiment-open #steelyardPanel > :not(#steelyardModes) { display: none !important; }
+#labLife.experiment-open .steelyard-mode-row { grid-template-columns: 1fr; }
+.steelyard-experiment { display: flex; flex-direction: column; height: 100%; overflow: auto; padding: 18px 22px 12px; gap: 10px; }
+.steelyard-experiment h2 { font-size: clamp(22px, 2vw, 32px); color: #115e59; }
+.experiment-methods, .experiment-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.steelyard-experiment .btn { font-size: 17px; padding: 10px 16px; }
+.experiment-phase { font-size: 20px; min-height: 28px; color: #475569; }
+.steelyard-experiment svg { flex: 1 0 300px; min-height: 300px; width: 100%; background: #faf9f6; }
+.experiment-actions { justify-content: center; }
+.experiment-result { padding: 10px; border-radius: 8px; background: #ecfdf5; color: #115e59; text-align: center; font-size: 22px; font-weight: 700; }
+.steelyard-experiment details { font-size: 17px; line-height: 1.6; }
+.steelyard-experiment summary { cursor: pointer; color: #0f766e; }
+.steelyard-experiment small { font-size: 13px; color: #64748b; }
+.steelyard-experiment [hidden] { display: none !important; }
+@media(max-width:900px) {
+  #labLife.experiment-open { grid-template-columns: minmax(0,1fr) 155px; grid-template-rows: 1fr; }
+  .steelyard-experiment { padding: 10px; }
+  .steelyard-experiment .btn { font-size: 15px; padding: 8px; }
+  .experiment-phase { font-size: 17px; }
+}
