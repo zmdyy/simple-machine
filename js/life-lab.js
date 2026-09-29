@@ -581,7 +581,8 @@
       readout.innerHTML =
         '<b>当前物体：' + obj.name + '（' + obj.massKg.toFixed(1) + ' kg）</b><br>' +
         stateText + '<br>' +
-        '平衡判定：秤杆偏离水平不超过约 ±2.7°。';
+        '当前倾角：' + Math.abs(finalModel.angleDeg).toFixed(1) + '°　·　' +
+        '≤1.5° 判为平衡，1.5°～3.0° 为接近平衡。';
     }
 
     const core = document.getElementById('steelyardCore');

@@ -17,7 +17,8 @@
     zeroX: 235,
     poiseMassKg: 0.56,
     maxTiltDeg: 10,
-    balanceToleranceDeg: 2.7,
+    balanceToleranceDeg: 1.5,
+    nearBalanceToleranceDeg: 3.0,
   };
 
   const OBJECTS = [
@@ -86,6 +87,9 @@
       beforeT: beforeT(objectIndex),
       angleDeg,
       balanced: Math.abs(angleDeg) <= CFG.balanceToleranceDeg,
+      nearBalanced:
+        Math.abs(angleDeg) > CFG.balanceToleranceDeg &&
+        Math.abs(angleDeg) <= CFG.nearBalanceToleranceDeg,
       O,
       p1,
       p2,
@@ -119,9 +123,100 @@
 
   function status(m) {
     if (m.balanced) return '杆秤达到平衡。';
+    if (m.nearBalanced) return '接近平衡，再微调秤砣位置。';
     return m.angleDeg < 0
-      ? '物体侧下沉：将秤砣向外移动。'
-      : '秤砣侧下沉：将秤砣向内移动。';
+      ? '物体侧下沉：请将秤砣向外移动。'
+      : '秤砣侧下沉：请将秤砣向内移动。';
+  }
+
+  function statusColor(m) {
+    if (m.balanced) return '#16a34a';
+    if (m.nearBalanced) return '#d97706';
+    return '#b45309';
+  }
+
+  function drawLevelGauge(g, m) {
+    const cx = 657;
+    const cy = 87;
+    const r = 47;
+    const color = statusColor(m);
+
+    // 仪表底盘
+    S.el('circle', {
+      cx, cy, r: r + 5,
+      fill: '#111827', stroke: '#475569', 'stroke-width': 3,
+      opacity: 0.98,
+    }, g);
+    S.el('circle', {
+      cx, cy, r: r - 7,
+      fill: '#18212f', stroke: '#64748b', 'stroke-width': 1.4,
+    }, g);
+
+    // 外圈刻度
+    for (let i = 0; i < 36; i += 1) {
+      const a = (i * 10 - 90) * Math.PI / 180;
+      const major = i % 3 === 0;
+      const ro = r - 2;
+      const ri = major ? r - 13 : r - 9;
+      S.el('line', {
+        x1: cx + Math.cos(a) * ri,
+        y1: cy + Math.sin(a) * ri,
+        x2: cx + Math.cos(a) * ro,
+        y2: cy + Math.sin(a) * ro,
+        stroke: major ? '#e2e8f0' : '#94a3b8',
+        'stroke-width': major ? 2 : 1.1,
+        opacity: major ? 0.92 : 0.7,
+      }, g);
+    }
+
+    // 中心辅助短刻线，增强“是否水平”的视觉参照。
+    [-18, -9, 0, 9, 18].forEach(function (dy, i) {
+      const half = i === 2 ? 11 : (i === 1 || i === 3 ? 7 : 5);
+      S.el('line', {
+        x1: cx - half, y1: cy + dy,
+        x2: cx + half, y2: cy + dy,
+        stroke: '#cbd5e1',
+        'stroke-width': i === 2 ? 2.2 : 1.5,
+        opacity: i === 2 ? 0.95 : 0.72,
+      }, g);
+    });
+
+    // 当前秤杆姿态：与秤杆同角度旋转。
+    const rad = m.angleDeg * Math.PI / 180;
+    const half = 30;
+    const dx = Math.cos(rad) * half;
+    const dy = Math.sin(rad) * half;
+    S.el('line', {
+      x1: cx - dx, y1: cy - dy,
+      x2: cx + dx, y2: cy + dy,
+      stroke: '#f8fafc', 'stroke-width': 5,
+      'stroke-linecap': 'round',
+    }, g);
+
+    // 固定水平基准线。真正水平时会与上面的姿态线重合。
+    S.el('line', {
+      x1: cx - r - 15, y1: cy,
+      x2: cx + r + 15, y2: cy,
+      stroke: '#22c55e', 'stroke-width': 2.6,
+      opacity: 0.92,
+    }, g);
+
+    S.el('circle', {
+      cx, cy, r: 4.5,
+      fill: color, stroke: '#f8fafc', 'stroke-width': 1.2,
+    }, g);
+    S.el('circle', {
+      cx, cy, r: r + 6,
+      fill: 'none', stroke: color, 'stroke-width': 2.5,
+      opacity: m.balanced ? 0.9 : 0.66,
+    }, g);
+
+    S.el('text', {
+      x: cx, y: cy + r + 19,
+      'text-anchor': 'middle',
+      fill: '#475569', 'font-size': 11, 'font-weight': 700,
+      'font-family': 'Noto Sans SC, Microsoft YaHei, sans-serif',
+    }, g).textContent = '水平仪';
   }
 
   function ensureDefs(svg) {
@@ -418,6 +513,8 @@
       fill: 'none', stroke: '#6b5c43', 'stroke-width': 4,
     }, g);
 
+    drawLevelGauge(g, m);
+
     if (opts.compare && opts.beforeModel) {
       drawBeam(g, opts.beforeModel, { ghost: true, opacity: 0.42 });
       drawPoise(g, opts.beforeModel, true);
@@ -434,7 +531,7 @@
 
     S.el('text', {
       x: 38, y: 402,
-      fill: m.balanced ? '#047857' : '#92400e',
+      fill: statusColor(m),
       'font-size': 13, 'font-weight': 700,
     }, g).textContent = status(m);
 
