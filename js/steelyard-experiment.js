@@ -82,20 +82,22 @@
     panel.querySelector('svg').innerHTML=graphic;
     const phase=panel.querySelector('.experiment-phase');
     phase.textContent= mode==='precision'
-      ? progress===0?'两把秤都已平衡：物体质量为200 g':progress<.35?'同时增加100 g，原来的平衡被打破':!done?'移动秤砣，重新达到平衡':'同样增加100 g，秤砣移动得更远，两个质量对应的位置就更容易分清。'
+      ? progress===0?'两把秤都已平衡：物体质量为200 g':progress<.35?'同时增加100 g，原来的平衡被打破':!done?'移动秤砣，重新达到平衡':''
       : progress===0?'原秤已到最大称量值；改进后的秤砣还能向外移动':progress<.94?'同步增加质量：观察哪把秤还能保持平衡':'恢复至各自最大可称质量，比较量程';
     panel.querySelector('.experiment-result').hidden=!done || mode==='precision';
-    phase.classList.toggle('is-conclusion',done && mode==='precision');
+    phase.hidden=done && mode==='precision';
     panel.querySelector('.experiment-result').textContent=mode==='precision'
-      ?'同样增加100 g，秤砣移动得更远，两个质量对应的位置就更容易分清。'
+      ?''
       :`最大可称质量：${fmt(limit(base))} kg → ${fmt(limit(changed))} kg`;
-    const details=panel.querySelector('details'); details.hidden=!done;
-    details.querySelector('summary').textContent=mode==='precision'?'为什么？':'对分辨能力有什么影响？';
-    details.querySelector('p').textContent=mode==='precision'
-      ?'增加的质量 × 挂钩到支点的距离 ＝ 秤砣质量 × 秤砣移动距离。在位置辨认能力相同的条件下，移动距离更大，更容易区分相近质量。秤砣可移动范围相同时，这样改动会减小量程。'
-      :selected===1?'加长有效秤杆，量程增大；同样增加100 g，秤砣移动距离不变。':'量程增大；但同样增加100 g，秤砣移动距离变小，分辨相近质量更困难。';
+    const details=panel.querySelector('details');
+    if(details) {
+      details.hidden=!done;
+      details.querySelector('p').textContent=selected===1
+        ?'加长有效秤杆，量程增大；同样增加100 g，秤砣移动距离不变。'
+        :'量程增大；但同样增加100 g，秤砣移动距离变小，分辨相近质量更困难。';
+    }
   }
-  function reset() {cancelAnimationFrame(frame);progress=0;panel.querySelector('details').open=false;draw();panel.querySelector('[data-play]').disabled=false;}
+  function reset() {cancelAnimationFrame(frame);progress=0;if(panel.querySelector('details'))panel.querySelector('details').open=false;draw();panel.querySelector('[data-play]').disabled=false;}
   function play() {
     reset();panel.querySelector('[data-play]').disabled=true;
     const start=performance.now(), duration=mode==='precision'?6500:9000;
@@ -111,14 +113,13 @@
     close();mode=nextMode;base=mode==='precision'?precisionBase:rangeBase;selected=0;
     document.getElementById('labLife').classList.add('experiment-open');
     panel=document.createElement('section');panel.className='steelyard-experiment';
-    panel.innerHTML=`<h2>${mode==='precision'?'怎样让杆秤更容易分辨质量的微小变化？':'怎样增大杆秤的量程？'}</h2>
+    panel.innerHTML=`<div class="experiment-heading"><h2>${mode==='precision'?'怎样让杆秤更容易分辨质量的微小变化？':'怎样增大杆秤的量程？'}</h2>
+      <div class="experiment-methods">${choices[mode].map((c,i)=>`<button class="btn" data-choice="${i}">${c.name}</button>`).join('')}</div></div>
       <p class="experiment-phase" aria-live="polite"></p>
-      <div class="experiment-methods">${choices[mode].map((c,i)=>`<button class="btn" data-choice="${i}">${c.name}</button>`).join('')}</div>
       <svg viewBox="0 0 1000 355" role="img" aria-label="上下两把完整杆秤，按相同长度比例比较"></svg>
       <p class="experiment-result" hidden></p>
       <div class="experiment-actions"><button class="btn primary" data-play>${mode==='precision'?'增加100 g，观察变化':'开始比较'}</button><button class="btn" data-replay>重播</button></div>
-      <details hidden><summary></summary><p></p></details>
-      <small>教学简化模型：忽略杆重、摩擦和形变；两把秤使用相同长度比例。</small>`;
+      ${mode==='range'?'<details hidden><summary>对分辨能力有什么影响？</summary><p></p></details>':''}`;
     document.querySelector('#labLife .stage').appendChild(panel);
     const buttons=panel.querySelectorAll('[data-choice]');
     buttons.forEach(b=>b.onclick=()=>{selected=Number(b.dataset.choice);buttons.forEach(x=>x.classList.toggle('active-toggle',x===b));reset();});

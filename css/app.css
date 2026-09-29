@@ -777,3 +777,9 @@ header.app-header { height: auto; min-height: var(--header-h); padding-top: 6px;
 .experiment-phase.is-conclusion { background: #ecfdf5; color: #115e59; border-radius: 8px; padding: 8px 12px; font-weight: 700; }
 .steelyard-experiment svg { flex: 1 1 auto; min-height: 290px; }
 .steelyard-experiment h2, .experiment-methods, .experiment-actions, .experiment-result, .steelyard-experiment details, .steelyard-experiment small { flex-shrink: 0; }
+
+.experiment-heading { display: flex; align-items: center; gap: 20px; flex-shrink: 0; flex-wrap: wrap; }
+.experiment-heading h2 { font-size: clamp(22px, 1.65vw, 30px); line-height: 1.35; }
+.experiment-heading .experiment-methods { border-left: 2px solid #cbd5e1; padding-left: 18px; gap: 8px; }
+.experiment-heading .btn { font-size: 16px; padding: 9px 12px; color: #334155; background: #f8fafc; }
+.experiment-heading .btn.active-toggle { color: #fff; background: #0f766e; border-color: #0f766e; }
