@@ -671,3 +671,39 @@ table.data-table tr.ok-row td { background: #ecfdf5; }
   pointer-events: none;
   background: transparent;
 }
+
+
+/* 杆秤观察模式 */
+.steelyard-panel {
+  display: grid;
+  gap: 9px;
+}
+.steelyard-panel[hidden] {
+  display: none !important;
+}
+.steelyard-object-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+.steelyard-object-grid .btn {
+  width: 100%;
+  min-width: 0;
+  white-space: nowrap;
+}
+.steelyard-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+.steelyard-actions .btn {
+  width: 100%;
+  min-width: 0;
+  white-space: nowrap;
+}
+@media (max-width: 980px) {
+  .steelyard-object-grid,
+  .steelyard-actions {
+    grid-template-columns: 1fr;
+  }
+}

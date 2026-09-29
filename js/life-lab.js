@@ -207,6 +207,28 @@
       },
     },
     {
+      id: 'steelyard',
+      name: '杆秤',
+      observeOnly: true,
+      action: '观察：选择不同质量的物体，移动秤砣使杆秤达到平衡',
+      whyO: '提钮悬挂处是支点 O；秤砣重力是动力，被称物体重力是阻力，两者方向都竖直向下。',
+      view: '侧视 · 真实感绘制',
+      paramLabel: '秤砣位置',
+      getGeom(t) {
+        if (global.SteelyardCase) {
+          return global.SteelyardCase.model({ objectIndex: 0, t: t == null ? 0.2 : t }).lever;
+        }
+        const O = K.v(235, 168);
+        return {
+          O,
+          bar: [K.v(94, 168), O, K.v(710, 168)],
+          p1: K.v(360, 168), d1: K.v(0, 1),
+          p2: K.v(125, 168), d2: K.v(0, 1),
+          f2: 6,
+        };
+      },
+    },
+    {
       id: 'balance',
       name: '天平',
       action: '分析：称量（等臂对照）',
@@ -276,6 +298,11 @@
     showTruth: false,
     exploreLastValidDir: null,
     exploreStatus: null,
+    steelyardObject: 0,
+    steelyardCompare: false,
+    steelyardShowElements: false,
+    steelyardShowArms: false,
+    steelyardAnimToken: 0,
   };
 
   function ex() {
@@ -409,6 +436,9 @@
   function renderList() {
     const box = document.getElementById('lifeList');
     box.innerHTML = EXAMPLES.map((e, i) => {
+      if (e.observeOnly) {
+        return `<button type="button" class="life-item${i === state.idx ? ' active' : ''}" data-i="${i}">${e.name}<span class="tag eq">观察</span></button>`;
+      }
       const g = sceneGeom(e, e.defaultT ?? 0.5);
       const a1 = K.forceArm(g.O, g.p1, g.d1);
       const a2 = K.forceArm(g.O, g.p2, g.d2);
@@ -436,6 +466,142 @@
     }
   }
 
+
+  function isSteelyard() {
+    return ex() && ex().id === 'steelyard' && !!global.SteelyardCase;
+  }
+
+  function syncLifeChrome(example) {
+    const special = !!example && example.id === 'steelyard';
+    ['lifePrev', 'lifeNext', 'lifeSkip', 'lifePerp', 'lifeExitPractice'].forEach(function (id) {
+      const el = document.getElementById(id);
+      if (el) el.hidden = special;
+    });
+    const panel = document.getElementById('steelyardPanel');
+    if (panel) panel.hidden = !special;
+    const bars = document.getElementById('lifeMomentBars');
+    if (bars) bars.hidden = special;
+    const cls = document.getElementById('lifeClass');
+    if (cls) cls.hidden = special;
+    const hint = document.getElementById('lifeDefaultHint');
+    if (hint) hint.hidden = special;
+    const param = document.getElementById('lifeParam');
+    if (special && param) param.hidden = true;
+  }
+
+  function cancelSteelyardAnimation() {
+    state.steelyardAnimToken += 1;
+  }
+
+  function steelyardModel(tOverride) {
+    return global.SteelyardCase.model({
+      objectIndex: state.steelyardObject,
+      t: tOverride == null ? state.t : tOverride,
+    });
+  }
+
+  function setSteelyardObject(index) {
+    cancelSteelyardAnimation();
+    state.steelyardObject = Math.max(0, Math.min(global.SteelyardCase.OBJECTS.length - 1, index | 0));
+    state.t = global.SteelyardCase.beforeT(state.steelyardObject);
+    state.steelyardCompare = false;
+    setJudge('物体已经挂好。请观察现在杆秤是否平衡，再拖动秤砣或点“开始称量”。', null);
+    render();
+  }
+
+  function startSteelyardAuto() {
+    if (!isSteelyard()) return;
+    state.steelyardCompare = false;
+    const target = global.SteelyardCase.targetT(state.steelyardObject);
+    const start = state.t;
+    const token = ++state.steelyardAnimToken;
+    const nowFn = global.performance && performance.now ? function () { return performance.now(); } : function () { return Date.now(); };
+    const t0 = nowFn();
+    const raf = global.requestAnimationFrame || function (fn) { return setTimeout(function () { fn(nowFn()); }, 16); };
+
+    setJudge('观察秤砣的位置变化，以及杆秤如何逐渐达到平衡。', null);
+
+    function frame(now) {
+      if (token !== state.steelyardAnimToken || !isSteelyard()) return;
+      const u = Math.max(0, Math.min(1, (now - t0) / 820));
+      const ease = 1 - Math.pow(1 - u, 3);
+      state.t = start + (target - start) * ease;
+      render();
+      if (u < 1) {
+        raf(frame);
+      } else {
+        state.t = target;
+        render();
+        setJudge('杆秤达到平衡。物体越重，平衡时秤砣通常离支点越远，动力臂越大。', true);
+      }
+    }
+    raf(frame);
+  }
+
+  function renderSteelyard(Lbar, Ldraw, Lui, example) {
+    state.practice = false;
+    const raw = steelyardModel();
+    const finalModel = state.steelyardCompare
+      ? steelyardModel(global.SteelyardCase.targetT(state.steelyardObject))
+      : raw;
+    const beforeModel = steelyardModel(global.SteelyardCase.beforeT(state.steelyardObject));
+
+    document.getElementById('lifeAction').textContent = example.action;
+    document.getElementById('lifeWhy').textContent = example.whyO;
+    document.getElementById('lifeStepBadge').textContent = '观察模式';
+
+    global.SteelyardCase.draw(Lbar, finalModel, {
+      showElements: state.steelyardShowElements,
+      showArms: state.steelyardShowArms,
+      compare: state.steelyardCompare,
+      beforeModel: beforeModel,
+    });
+
+    const objectBox = document.getElementById('steelyardObjects');
+    if (objectBox) {
+      objectBox.innerHTML = global.SteelyardCase.OBJECTS.map(function (obj, i) {
+        return '<button type="button" class="btn' + (i === state.steelyardObject ? ' active-toggle' : '') +
+          '" data-steelyard-object="' + i + '">' + obj.name + ' · ' + obj.massKg.toFixed(1) + ' kg</button>';
+      }).join('');
+    }
+
+    const elBtn = document.getElementById('steelyardElements');
+    const armBtn = document.getElementById('steelyardArms');
+    const compareBtn = document.getElementById('steelyardCompare');
+    if (elBtn) elBtn.classList.toggle('active-toggle', state.steelyardShowElements);
+    if (armBtn) armBtn.classList.toggle('active-toggle', state.steelyardShowArms);
+    if (compareBtn) compareBtn.classList.toggle('active-toggle', state.steelyardCompare);
+
+    const readout = document.getElementById('steelyardReadout');
+    if (readout) {
+      const obj = finalModel.object;
+      const stateText = state.steelyardCompare
+        ? '正在对比：灰色虚线为称量前，实线为平衡后'
+        : global.SteelyardCase.status(finalModel);
+      readout.innerHTML =
+        '<b>当前物体：' + obj.name + '（' + obj.massKg.toFixed(1) + ' kg）</b><br>' +
+        stateText + '<br>' +
+        '平衡判定：秤杆偏离水平不超过约 ±2.7°。';
+    }
+
+    const core = document.getElementById('steelyardCore');
+    if (core) {
+      core.textContent = finalModel.balanced || state.steelyardCompare
+        ? '观察结论：物体越重，需要把秤砣移得越远，增大动力臂，才能重新达到平衡。'
+        : '拖动秤砣：向外移动会增大动力臂；向内移动会减小动力臂。';
+    }
+
+    if (!state.steelyardCompare) {
+      setJudge(global.SteelyardCase.status(finalModel), finalModel.balanced ? true : null);
+    }
+
+    S.el('rect', {
+      id: 'steelyardHit',
+      x: 0, y: 0, width: 800, height: 420,
+      fill: 'transparent', 'pointer-events': 'all',
+    }, Lui);
+  }
+
   function render() {
     const root = svg();
     const Lbar = root.querySelector('#lifeBar');
@@ -446,6 +612,11 @@
     S.clear(Ldraw);
     S.clear(Lui);
     const e = ex();
+    syncLifeChrome(e);
+    if (e.id === 'steelyard' && global.SteelyardCase) {
+      renderSteelyard(Lbar, Ldraw, Lui, e);
+      return;
+    }
     const g = geom();
     const step = state.practice ? 0 : state.step;
     const exploring = state.practice && state.practicePhase === 'explore' && exploreEnabled(e);
@@ -693,6 +864,44 @@
 
   function bind() {
     renderList();
+
+    const steelyardObjects = document.getElementById('steelyardObjects');
+    if (steelyardObjects) {
+      steelyardObjects.onclick = function (evt) {
+        const b = evt.target.closest('[data-steelyard-object]');
+        if (!b) return;
+        setSteelyardObject(+b.dataset.steelyardObject);
+      };
+    }
+    const steelyardAuto = document.getElementById('steelyardAuto');
+    if (steelyardAuto) steelyardAuto.onclick = startSteelyardAuto;
+    const steelyardCompare = document.getElementById('steelyardCompare');
+    if (steelyardCompare) {
+      steelyardCompare.onclick = function () {
+        cancelSteelyardAnimation();
+        state.steelyardCompare = !state.steelyardCompare;
+        if (state.steelyardCompare) {
+          setJudge('平衡前后同时显示：比较秤砣位置和秤杆角度的变化。', null);
+        }
+        render();
+      };
+    }
+    const steelyardElements = document.getElementById('steelyardElements');
+    if (steelyardElements) {
+      steelyardElements.onclick = function () {
+        state.steelyardShowElements = !state.steelyardShowElements;
+        render();
+      };
+    }
+    const steelyardArms = document.getElementById('steelyardArms');
+    if (steelyardArms) {
+      steelyardArms.onclick = function () {
+        state.steelyardShowArms = !state.steelyardShowArms;
+        if (state.steelyardShowArms) state.steelyardShowElements = true;
+        render();
+      };
+    }
+
     document.getElementById('lifeList').onclick = (e) => {
       const b = e.target.closest('[data-i]');
       if (!b) return;
@@ -703,7 +912,12 @@
       state.tPrev = null;
       state.showTruth = false;
       renderList();
-      if (ex().id === 'broom') {
+      cancelSteelyardAnimation();
+      if (ex().id === 'steelyard' && global.SteelyardCase) {
+        state.t = global.SteelyardCase.beforeT(state.steelyardObject);
+        state.steelyardCompare = false;
+        setJudge('请选择物体，拖动秤砣观察杆秤怎样达到平衡。', null);
+      } else if (ex().id === 'broom') {
         setJudge('先只看扫把实物图。下一步先标上手支点 O，再揭示下手动力点和扫把头阻力点。', null);
       } else if (ex().id === 'opener') {
         setJudge('先只看真实开瓶器。重点观察：支点不是瓶子中心，而是开瓶器鼻端压住瓶盖的接触点。', null);
@@ -793,8 +1007,30 @@
 
     const s = svg();
     s.addEventListener('pointerdown', (evt) => {
-      if (!state.practice) return;
       if (evt.target.closest && evt.target.closest('.stage-toolbar')) return;
+
+      if (isSteelyard()) {
+        let p0;
+        try {
+          p0 = svgPoint(evt);
+        } catch (err) {
+          return;
+        }
+        const sm = state.steelyardCompare
+          ? steelyardModel(global.SteelyardCase.targetT(state.steelyardObject))
+          : steelyardModel();
+        const hit = K.dist(p0, K.v(sm.p1.x, sm.p1.y + 64)) < 48 || K.dist(p0, sm.p1) < 40;
+        if (hit) {
+          state.t = sm.t;
+          cancelSteelyardAnimation();
+          state.steelyardCompare = false;
+          dragging = 'steelyardPoise';
+          setJudge('正在拖动秤砣：向外移动会增大动力臂。', null);
+        }
+        return;
+      }
+
+      if (!state.practice) return;
       let p;
       try {
         p = svgPoint(evt);
@@ -874,7 +1110,22 @@
       }
     });
     window.addEventListener('pointermove', (evt) => {
-      if (!dragging || !state.practice) return;
+      if (!dragging) return;
+
+      if (dragging === 'steelyardPoise') {
+        if (!isSteelyard()) {
+          dragging = null;
+          return;
+        }
+        const p0 = svgPoint(evt);
+        const sm = steelyardModel();
+        state.t = global.SteelyardCase.tFromPoint(p0, sm.angleDeg);
+        state.steelyardCompare = false;
+        render();
+        return;
+      }
+
+      if (!state.practice) return;
       const p = svgPoint(evt);
       const g = geom();
       if (dragging === 'dir') {
@@ -909,6 +1160,19 @@
       }
     });
     window.addEventListener('pointerup', () => {
+      if (dragging === 'steelyardPoise') {
+        if (isSteelyard()) {
+          const sm = steelyardModel();
+          setJudge(
+            global.SteelyardCase.status(sm),
+            sm.balanced ? true : null
+          );
+          render();
+        }
+        dragging = null;
+        return;
+      }
+
       if (!state.practice) {
         dragging = null;
         return;
