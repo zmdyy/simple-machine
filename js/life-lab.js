@@ -303,6 +303,9 @@
     steelyardShowElements: false,
     steelyardShowArms: false,
     steelyardAnimToken: 0,
+    steelyardMode: 'measure',
+    steelyardPrecisionStrategy: 'lighterPoise',
+    steelyardRangeStrategy: 'heavierPoise',
   };
 
   function ex() {
@@ -540,6 +543,96 @@
 
   function renderSteelyard(Lbar, Ldraw, Lui, example) {
     state.practice = false;
+
+    const modeBox = document.getElementById('steelyardModes');
+    if (modeBox) {
+      modeBox.querySelectorAll('[data-steelyard-mode]').forEach(function (b) {
+        b.classList.toggle('active-toggle', b.dataset.steelyardMode === state.steelyardMode);
+      });
+    }
+
+    const measureControls = document.getElementById('steelyardMeasureControls');
+    const extensionControls = document.getElementById('steelyardExtensionControls');
+    const isMeasure = state.steelyardMode === 'measure';
+    if (measureControls) measureControls.hidden = !isMeasure;
+    if (extensionControls) extensionControls.hidden = isMeasure;
+
+    if (!isMeasure) {
+      cancelSteelyardAnimation();
+      state.steelyardCompare = false;
+
+      const precision = state.steelyardMode === 'precision';
+      const strategyId = precision
+        ? state.steelyardPrecisionStrategy
+        : state.steelyardRangeStrategy;
+      const data = global.SteelyardCase.drawExtension(Lbar, {
+        mode: state.steelyardMode,
+        strategyId: strategyId,
+      });
+
+      document.getElementById('lifeAction').textContent = precision
+        ? '拓展：比较同样质量变化对应的秤砣位移'
+        : '拓展：比较不同设计下杆秤的最大称量质量';
+      document.getElementById('lifeWhy').textContent = precision
+        ? '这里把“精度”具体化为分辨能力：相同质量变化引起的秤砣位移越大，越容易区分相邻质量。'
+        : '量程由秤砣质量、最大动力臂和阻力臂共同决定。';
+      document.getElementById('lifeStepBadge').textContent = precision
+        ? '拓展 · 提高精度'
+        : '拓展 · 增大量程';
+
+      const strategyBox = document.getElementById('steelyardStrategies');
+      if (strategyBox && data) {
+        const list = global.SteelyardCase.extensionStrategies[state.steelyardMode] || [];
+        strategyBox.innerHTML = list.map(function (s) {
+          return '<button type="button" class="btn' + (s.id === strategyId ? ' active-toggle' : '') +
+            '" data-steelyard-strategy="' + s.id + '">' + s.name + '</button>';
+        }).join('');
+      }
+
+      const readout = document.getElementById('steelyardExtensionReadout');
+      const core = document.getElementById('steelyardExtensionCore');
+      if (data && readout && core) {
+        if (precision) {
+          readout.innerHTML =
+            '<b>' + data.strategy.name + '</b><br>' +
+            '同样增加 ' + data.deltaKg.toFixed(1) + ' kg：秤砣位移由 1.00× 变为 <b>' +
+            data.spacingRatio.toFixed(2) + '×</b><br>' +
+            '对应最大量程：' + data.base.maxMass.toFixed(2) + ' kg → ' +
+            data.changed.maxMass.toFixed(2) + ' kg';
+          core.textContent =
+            data.strategy.summary +
+            (data.rangeRatio < 0.999
+              ? ' 代价是最大量程会减小。'
+              : '');
+        } else {
+          readout.innerHTML =
+            '<b>' + data.strategy.name + '</b><br>' +
+            '最大量程：' + data.base.maxMass.toFixed(2) + ' kg → <b>' +
+            data.changed.maxMass.toFixed(2) + ' kg</b>（' +
+            data.rangeRatio.toFixed(2) + '×）<br>' +
+            '同样增加 0.1 kg 时的秤砣位移：' +
+            data.spacingRatio.toFixed(2) + '×';
+          if (data.strategy.id === 'longerRod') {
+            core.textContent =
+              data.strategy.summary +
+              ' 在这个理想模型中，它不直接改变相邻质量对应的刻度间距，但会增加杆秤尺寸等工程代价。';
+          } else {
+            core.textContent =
+              data.strategy.summary +
+              ' 同时，相邻质量对应的秤砣位移会变小，分辨能力下降。';
+          }
+        }
+      }
+
+      setJudge(
+        precision
+          ? '观察两条杆秤：同样增加 0.1 kg，改进后秤砣平衡位置的间距是否更大？'
+          : '观察最大称量质量的变化，并比较这种办法是否影响分辨能力。',
+        null
+      );
+      return;
+    }
+
     const raw = steelyardModel();
     const finalModel = state.steelyardCompare
       ? steelyardModel(global.SteelyardCase.targetT(state.steelyardObject))
@@ -866,6 +959,33 @@
   function bind() {
     renderList();
 
+    const steelyardModes = document.getElementById('steelyardModes');
+    if (steelyardModes) {
+      steelyardModes.onclick = function (evt) {
+        const b = evt.target.closest('[data-steelyard-mode]');
+        if (!b) return;
+        cancelSteelyardAnimation();
+        dragging = null;
+        state.steelyardMode = b.dataset.steelyardMode;
+        state.steelyardCompare = false;
+        render();
+      };
+    }
+
+    const steelyardStrategies = document.getElementById('steelyardStrategies');
+    if (steelyardStrategies) {
+      steelyardStrategies.onclick = function (evt) {
+        const b = evt.target.closest('[data-steelyard-strategy]');
+        if (!b) return;
+        if (state.steelyardMode === 'precision') {
+          state.steelyardPrecisionStrategy = b.dataset.steelyardStrategy;
+        } else if (state.steelyardMode === 'range') {
+          state.steelyardRangeStrategy = b.dataset.steelyardStrategy;
+        }
+        render();
+      };
+    }
+
     const steelyardObjects = document.getElementById('steelyardObjects');
     if (steelyardObjects) {
       steelyardObjects.onclick = function (evt) {
@@ -917,6 +1037,7 @@
       if (ex().id === 'steelyard' && global.SteelyardCase) {
         state.t = global.SteelyardCase.beforeT(state.steelyardObject);
         state.steelyardCompare = false;
+        state.steelyardMode = 'measure';
         setJudge('请选择物体，拖动秤砣观察杆秤怎样达到平衡。', null);
       } else if (ex().id === 'broom') {
         setJudge('先只看扫把实物图。下一步先标上手支点 O，再揭示下手动力点和扫把头阻力点。', null);
@@ -1011,6 +1132,7 @@
       if (evt.target.closest && evt.target.closest('.stage-toolbar')) return;
 
       if (isSteelyard()) {
+        if (state.steelyardMode !== 'measure') return;
         let p0;
         try {
           p0 = svgPoint(evt);

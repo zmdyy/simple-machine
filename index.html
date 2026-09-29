@@ -96,21 +96,36 @@
           </div>
           <div id="steelyardPanel" class="steelyard-panel" hidden>
             <div class="task-card">
-              <div class="task-card-title">杆秤 · 观察模式</div>
-              <div class="task-card-step">移动秤砣改变动力臂</div>
-              <p class="task-card-body">选择不同质量的物体。可直接拖动秤砣，也可自动演示称量过程；本版不做刻度读数。</p>
+              <div class="task-card-title">杆秤 · 观察与拓展</div>
+              <div class="task-card-step">从称量到杆秤设计</div>
+              <p class="task-card-body">先观察移动秤砣怎样达到平衡，再比较“提高分辨能力”和“增大量程”的不同设计。</p>
             </div>
-            <h3>选择被称物体</h3>
-            <div class="steelyard-object-grid" id="steelyardObjects"></div>
-            <div class="steelyard-actions">
-              <button type="button" class="btn primary" id="steelyardAuto">开始称量</button>
-              <button type="button" class="btn" id="steelyardCompare">平衡前后对比</button>
-              <button type="button" class="btn" id="steelyardElements">显示杠杆要素</button>
-              <button type="button" class="btn" id="steelyardArms">显示力臂</button>
+            <div class="steelyard-mode-row" id="steelyardModes">
+              <button type="button" class="btn active-toggle" data-steelyard-mode="measure">基础称量</button>
+              <button type="button" class="btn" data-steelyard-mode="precision">怎样提高精度</button>
+              <button type="button" class="btn" data-steelyard-mode="range">怎样增大量程</button>
             </div>
-            <div class="readout" id="steelyardReadout"></div>
-            <p class="hint" id="steelyardCore">拖动秤砣：向外移动会增大动力臂；向内移动会减小动力臂。</p>
-            <p class="hint"><strong>后续拓展：</strong>提高精度、增大量程、双提钮双量程。</p>
+
+            <div id="steelyardMeasureControls">
+              <h3>选择被称物体</h3>
+              <div class="steelyard-object-grid" id="steelyardObjects"></div>
+              <div class="steelyard-actions">
+                <button type="button" class="btn primary" id="steelyardAuto">开始称量</button>
+                <button type="button" class="btn" id="steelyardCompare">平衡前后对比</button>
+                <button type="button" class="btn" id="steelyardElements">显示杠杆要素</button>
+                <button type="button" class="btn" id="steelyardArms">显示力臂</button>
+              </div>
+              <div class="readout" id="steelyardReadout"></div>
+              <p class="hint" id="steelyardCore">拖动秤砣：向外移动会增大动力臂；向内移动会减小动力臂。</p>
+            </div>
+
+            <div id="steelyardExtensionControls" class="steelyard-extension" hidden>
+              <h3>选择一种改进办法</h3>
+              <div class="steelyard-strategies" id="steelyardStrategies"></div>
+              <div class="readout" id="steelyardExtensionReadout"></div>
+              <p class="hint" id="steelyardExtensionCore"></p>
+              <p class="hint"><strong>下一拓展：</strong>双提钮双量程——用两个支点位置在同一杆秤上兼顾不同使用需求。</p>
+            </div>
           </div>
           <div class="judge-msg" id="lifeJudge">从撬棒或扫把（课眼）开始，点「下一步」分步揭示。</div>
           <p class="hint" id="lifeDefaultHint">忽略摩擦，按刚能撬动/推开来估算 F₁。作用点画在杆上。</p>
@@ -370,8 +385,8 @@
   <script src="js/svg-draw.js?v=20260320m"></script>
   <script src="js/arm-lab.js?v=20260925c"></script>
   <script src="js/life-scenes.js?v=20260926c"></script>
-  <script src="js/steelyard-case.js?v=20260929c"></script>
-  <script src="js/life-lab.js?v=20260929b"></script>
+  <script src="js/steelyard-case.js?v=20260929d"></script>
+  <script src="js/life-lab.js?v=20260929c"></script>
   <script src="js/anatomy-rigs.js?v=20260927b"></script>
   <script type="module" src="js/body-3d.js?v=20260927b"></script>
   <script src="js/body-scenes.js?v=20260926f"></script>

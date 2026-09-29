@@ -431,6 +431,292 @@
     }
   }
 
+  const EXT_BASE = {
+    poiseMassKg: CFG.poiseMassKg,
+    resistanceArm: CFG.O.x - CFG.hookX,
+    maxDriveArm: CFG.rodEndX - CFG.O.x,
+  };
+
+  const EXT_STRATEGIES = {
+    precision: [
+      {
+        id: 'lighterPoise',
+        name: '减小秤砣质量',
+        poiseMassKg: 0.38,
+        resistanceArm: EXT_BASE.resistanceArm,
+        maxDriveArm: EXT_BASE.maxDriveArm,
+        summary: '秤砣变轻后，同样的质量变化需要更大的位移才能重新平衡。',
+      },
+      {
+        id: 'longerResistanceArm',
+        name: '增大阻力臂',
+        poiseMassKg: EXT_BASE.poiseMassKg,
+        resistanceArm: 145,
+        maxDriveArm: EXT_BASE.maxDriveArm,
+        summary: '支点离挂钩更远后，同样的质量变化会对应更大的秤砣位移。',
+      },
+    ],
+    range: [
+      {
+        id: 'heavierPoise',
+        name: '加重秤砣',
+        poiseMassKg: 0.80,
+        resistanceArm: EXT_BASE.resistanceArm,
+        maxDriveArm: EXT_BASE.maxDriveArm,
+        summary: '秤砣更重，在相同最大动力臂下可以平衡更重的物体。',
+      },
+      {
+        id: 'longerRod',
+        name: '加长有效秤杆',
+        poiseMassKg: EXT_BASE.poiseMassKg,
+        resistanceArm: EXT_BASE.resistanceArm,
+        maxDriveArm: 535,
+        summary: '秤砣能够移动得更远，最大动力臂增大，因此量程增大。',
+      },
+      {
+        id: 'shorterResistanceArm',
+        name: '减小阻力臂',
+        poiseMassKg: EXT_BASE.poiseMassKg,
+        resistanceArm: 80,
+        maxDriveArm: 505,
+        summary: '支点靠近挂钩后，物体的阻力臂变小，同样的秤砣可以平衡更重的物体。',
+      },
+    ],
+  };
+
+  function extensionStrategy(mode, strategyId) {
+    const list = EXT_STRATEGIES[mode] || [];
+    return list.find(function (s) { return s.id === strategyId; }) || list[0] || null;
+  }
+
+  function spacingForDelta(cfg, deltaKg) {
+    return deltaKg * cfg.resistanceArm / cfg.poiseMassKg;
+  }
+
+  function maxMass(cfg) {
+    return cfg.poiseMassKg * cfg.maxDriveArm / cfg.resistanceArm;
+  }
+
+  function extensionData(mode, strategyId) {
+    const strategy = extensionStrategy(mode, strategyId);
+    if (!strategy) return null;
+
+    const deltaKg = 0.1;
+    const baseSpacing = spacingForDelta(EXT_BASE, deltaKg);
+    const changedSpacing = spacingForDelta(strategy, deltaKg);
+    const baseMax = maxMass(EXT_BASE);
+    const changedMax = maxMass(strategy);
+
+    return {
+      mode,
+      strategy,
+      deltaKg,
+      base: {
+        poiseMassKg: EXT_BASE.poiseMassKg,
+        resistanceArm: EXT_BASE.resistanceArm,
+        maxDriveArm: EXT_BASE.maxDriveArm,
+        spacing: baseSpacing,
+        maxMass: baseMax,
+      },
+      changed: {
+        poiseMassKg: strategy.poiseMassKg,
+        resistanceArm: strategy.resistanceArm,
+        maxDriveArm: strategy.maxDriveArm,
+        spacing: changedSpacing,
+        maxMass: changedMax,
+      },
+      spacingRatio: changedSpacing / baseSpacing,
+      rangeRatio: changedMax / baseMax,
+    };
+  }
+
+  function extText(g, x, y, text, opts) {
+    opts = opts || {};
+    S.el('text', {
+      x, y,
+      fill: opts.fill || '#334155',
+      'font-size': opts.size || 13,
+      'font-weight': opts.weight || 600,
+      'text-anchor': opts.anchor || 'start',
+      'font-family': 'Noto Sans SC, Microsoft YaHei, sans-serif',
+    }, g).textContent = text;
+  }
+
+  function drawTinyPoise(g, x, y, fill) {
+    S.el('line', {
+      x1: x, y1: y, x2: x, y2: y + 28,
+      stroke: fill || '#6b5c43', 'stroke-width': 2.6,
+    }, g);
+    S.el('path', {
+      d: 'M ' + (x - 9) + ' ' + (y + 27) +
+         ' L ' + (x - 13) + ' ' + (y + 51) +
+         ' Q ' + x + ' ' + (y + 61) + ' ' + (x + 13) + ' ' + (y + 51) +
+         ' L ' + (x + 9) + ' ' + (y + 27) + ' Z',
+      fill: fill || '#9b875e', stroke: '#5f513b', 'stroke-width': 1.1,
+    }, g);
+  }
+
+  function drawPrecisionRow(g, y, label, cfg, baseMassKg, deltaKg, ratioLabel, accent) {
+    const pivotX = 245;
+    const hookX = pivotX - cfg.resistanceArm;
+    const rodEnd = 735;
+    const x1 = pivotX + baseMassKg * cfg.resistanceArm / cfg.poiseMassKg;
+    const x2 = pivotX + (baseMassKg + deltaKg) * cfg.resistanceArm / cfg.poiseMassKg;
+
+    extText(g, 45, y - 28, label, { size: 14, weight: 800, fill: accent });
+    S.el('line', {
+      x1: Math.max(55, hookX - 24), y1: y,
+      x2: rodEnd, y2: y,
+      stroke: '#8b5e34', 'stroke-width': 13, 'stroke-linecap': 'round',
+    }, g);
+    S.el('circle', { cx: pivotX, cy: y, r: 7, fill: '#0f766e' }, g);
+    S.el('line', {
+      x1: hookX, y1: y + 4, x2: hookX, y2: y + 52,
+      stroke: '#64748b', 'stroke-width': 2.5,
+    }, g);
+
+    drawTinyPoise(g, x1, y + 4, '#94a3b8');
+    drawTinyPoise(g, x2, y + 4, accent);
+
+    extText(g, x1, y - 12, baseMassKg.toFixed(1) + ' kg', {
+      size: 11, anchor: 'middle', fill: '#64748b',
+    });
+    extText(g, x2, y - 12, (baseMassKg + deltaKg).toFixed(1) + ' kg', {
+      size: 11, anchor: 'middle', fill: accent,
+    });
+
+    const by = y - 50;
+    S.el('line', {
+      x1: x1, y1: by, x2: x2, y2: by,
+      stroke: accent, 'stroke-width': 2.5,
+    }, g);
+    S.el('line', {
+      x1, y1: by - 5, x2: x1, y2: by + 5,
+      stroke: accent, 'stroke-width': 2,
+    }, g);
+    S.el('line', {
+      x1: x2, y1: by - 5, x2: x2, y2: by + 5,
+      stroke: accent, 'stroke-width': 2,
+    }, g);
+    extText(g, (x1 + x2) / 2, by - 8, ratioLabel, {
+      size: 12, anchor: 'middle', fill: accent, weight: 800,
+    });
+  }
+
+  function drawPrecisionExtension(g, data) {
+    extText(g, 42, 35, '拓展实验｜怎样提高杆秤精度（分辨能力）', {
+      size: 18, weight: 800, fill: '#0f766e',
+    });
+    extText(g, 42, 61, '同样增加 0.1 kg，比较秤砣重新平衡时需要移动多远。', {
+      size: 13, weight: 500, fill: '#64748b',
+    });
+
+    const baseMass = 1.0;
+    drawPrecisionRow(
+      g, 155, '原方案',
+      data.base, baseMass, data.deltaKg,
+      '位置差 = 1.00×', '#64748b'
+    );
+    drawPrecisionRow(
+      g, 300, data.strategy.name,
+      data.changed, baseMass, data.deltaKg,
+      '位置差 = ' + data.spacingRatio.toFixed(2) + '×', '#b45309'
+    );
+
+    extText(g, 42, 395, '位置差越大，相邻质量越容易区分；这里表示“分辨能力提高”，不等同于所有测量误差都消失。', {
+      size: 12, weight: 600, fill: '#475569',
+    });
+  }
+
+  function rangeGeometry(strategyId, changed) {
+    const basePivot = 235;
+    const baseHook = 125;
+    const baseEnd = 710;
+    if (strategyId === 'longerRod') {
+      return { pivotX: basePivot, hookX: baseHook, rodEnd: 770, poiseScale: 1 };
+    }
+    if (strategyId === 'shorterResistanceArm') {
+      return { pivotX: 205, hookX: baseHook, rodEnd: baseEnd, poiseScale: 1 };
+    }
+    return {
+      pivotX: basePivot,
+      hookX: baseHook,
+      rodEnd: baseEnd,
+      poiseScale: changed.poiseMassKg / EXT_BASE.poiseMassKg,
+    };
+  }
+
+  function drawRangeRow(g, y, label, cfg, geom, maxKg, accent) {
+    extText(g, 45, y - 30, label, { size: 14, weight: 800, fill: accent });
+    S.el('line', {
+      x1: 88, y1: y, x2: geom.rodEnd, y2: y,
+      stroke: '#8b5e34', 'stroke-width': 13, 'stroke-linecap': 'round',
+    }, g);
+    S.el('circle', { cx: geom.pivotX, cy: y, r: 7, fill: '#0f766e' }, g);
+    S.el('line', {
+      x1: geom.hookX, y1: y + 4, x2: geom.hookX, y2: y + 52,
+      stroke: '#64748b', 'stroke-width': 2.5,
+    }, g);
+
+    const poiseX = geom.rodEnd - 12;
+    const poiseColor = geom.poiseScale > 1.2 ? '#7c5a2d' : '#9b875e';
+    drawTinyPoise(g, poiseX, y + 4, poiseColor);
+    if (geom.poiseScale > 1.2) {
+      S.el('ellipse', {
+        cx: poiseX, cy: y + 52, rx: 17, ry: 14,
+        fill: '#7c5a2d', opacity: 0.32,
+      }, g);
+    }
+
+    S.el('rect', {
+      x: geom.hookX - 25, y: y + 58,
+      width: 50, height: 36, rx: 8,
+      fill: '#e2e8f0', stroke: '#64748b', 'stroke-width': 1.4,
+    }, g);
+    extText(g, geom.hookX, y + 81, maxKg.toFixed(2) + ' kg', {
+      size: 12, anchor: 'middle', fill: '#334155', weight: 800,
+    });
+    extText(g, 748, y + 5, '秤砣到最外端', {
+      size: 11, anchor: 'end', fill: '#64748b', weight: 500,
+    });
+  }
+
+  function drawRangeExtension(g, data) {
+    extText(g, 42, 35, '拓展实验｜怎样增大杆秤量程', {
+      size: 18, weight: 800, fill: '#0f766e',
+    });
+    extText(g, 42, 61, '把秤砣移到最外端，比较杆秤最多能平衡多重的物体。', {
+      size: 13, weight: 500, fill: '#64748b',
+    });
+
+    drawRangeRow(
+      g, 155, '原方案',
+      data.base,
+      { pivotX: 235, hookX: 125, rodEnd: 710, poiseScale: 1 },
+      data.base.maxMass, '#64748b'
+    );
+    drawRangeRow(
+      g, 300, data.strategy.name,
+      data.changed,
+      rangeGeometry(data.strategy.id, data.changed),
+      data.changed.maxMass, '#b45309'
+    );
+
+    extText(g, 42, 395, '量程变大 = 最大可称质量提高。不同办法对分辨能力的影响并不相同。', {
+      size: 12, weight: 600, fill: '#475569',
+    });
+  }
+
+  function drawExtension(g, opts) {
+    opts = opts || {};
+    const mode = opts.mode === 'range' ? 'range' : 'precision';
+    const data = extensionData(mode, opts.strategyId);
+    if (!data) return null;
+    if (mode === 'precision') drawPrecisionExtension(g, data);
+    else drawRangeExtension(g, data);
+    return data;
+  }
+
   function draw(g, m, opts) {
     opts = opts || {};
     const svg = g.ownerSVGElement;
@@ -493,6 +779,9 @@
     beforeT,
     tFromPoint,
     status,
+    extensionData,
+    extensionStrategies: EXT_STRATEGIES,
+    drawExtension,
     draw,
   };
 })(typeof window !== 'undefined' ? window : globalThis);
