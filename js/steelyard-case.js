@@ -136,87 +136,32 @@
   }
 
   function drawLevelGauge(g, m) {
-    const cx = 657;
-    const cy = 87;
-    const r = 47;
-    const color = statusColor(m);
+    const cx = 650;
+    const cy = 92;
 
-    // 仪表底盘
-    S.el('circle', {
-      cx, cy, r: r + 5,
-      fill: '#111827', stroke: '#475569', 'stroke-width': 3,
-      opacity: 0.98,
-    }, g);
-    S.el('circle', {
-      cx, cy, r: r - 7,
-      fill: '#18212f', stroke: '#64748b', 'stroke-width': 1.4,
-    }, g);
+    // 教学放大：杆秤实际变化 1°，水平仪中按 6° 显示。
+    // 只保留两根线：固定水平基准线 + 杆秤姿态线。
+    const displayDeg = clamp(m.angleDeg * 6, -36, 36);
+    const rad = displayDeg * Math.PI / 180;
 
-    // 外圈刻度
-    for (let i = 0; i < 36; i += 1) {
-      const a = (i * 10 - 90) * Math.PI / 180;
-      const major = i % 3 === 0;
-      const ro = r - 2;
-      const ri = major ? r - 13 : r - 9;
-      S.el('line', {
-        x1: cx + Math.cos(a) * ri,
-        y1: cy + Math.sin(a) * ri,
-        x2: cx + Math.cos(a) * ro,
-        y2: cy + Math.sin(a) * ro,
-        stroke: major ? '#e2e8f0' : '#94a3b8',
-        'stroke-width': major ? 2 : 1.1,
-        opacity: major ? 0.92 : 0.7,
-      }, g);
-    }
-
-    // 中心辅助短刻线，增强“是否水平”的视觉参照。
-    [-18, -9, 0, 9, 18].forEach(function (dy, i) {
-      const half = i === 2 ? 11 : (i === 1 || i === 3 ? 7 : 5);
-      S.el('line', {
-        x1: cx - half, y1: cy + dy,
-        x2: cx + half, y2: cy + dy,
-        stroke: '#cbd5e1',
-        'stroke-width': i === 2 ? 2.2 : 1.5,
-        opacity: i === 2 ? 0.95 : 0.72,
-      }, g);
-    });
-
-    // 当前秤杆姿态：与秤杆同角度旋转。
-    const rad = m.angleDeg * Math.PI / 180;
-    const half = 30;
-    const dx = Math.cos(rad) * half;
-    const dy = Math.sin(rad) * half;
+    const refHalf = 105;
     S.el('line', {
-      x1: cx - dx, y1: cy - dy,
-      x2: cx + dx, y2: cy + dy,
-      stroke: '#f8fafc', 'stroke-width': 5,
+      x1: cx - refHalf, y1: cy,
+      x2: cx + refHalf, y2: cy,
+      stroke: '#16a34a', 'stroke-width': 5,
       'stroke-linecap': 'round',
-    }, g);
-
-    // 固定水平基准线。真正水平时会与上面的姿态线重合。
-    S.el('line', {
-      x1: cx - r - 15, y1: cy,
-      x2: cx + r + 15, y2: cy,
-      stroke: '#22c55e', 'stroke-width': 2.6,
       opacity: 0.92,
     }, g);
 
-    S.el('circle', {
-      cx, cy, r: 4.5,
-      fill: color, stroke: '#f8fafc', 'stroke-width': 1.2,
+    const rodHalf = 82;
+    const dx = Math.cos(rad) * rodHalf;
+    const dy = Math.sin(rad) * rodHalf;
+    S.el('line', {
+      x1: cx - dx, y1: cy - dy,
+      x2: cx + dx, y2: cy + dy,
+      stroke: '#334155', 'stroke-width': 7,
+      'stroke-linecap': 'round',
     }, g);
-    S.el('circle', {
-      cx, cy, r: r + 6,
-      fill: 'none', stroke: color, 'stroke-width': 2.5,
-      opacity: m.balanced ? 0.9 : 0.66,
-    }, g);
-
-    S.el('text', {
-      x: cx, y: cy + r + 19,
-      'text-anchor': 'middle',
-      fill: '#475569', 'font-size': 11, 'font-weight': 700,
-      'font-family': 'Noto Sans SC, Microsoft YaHei, sans-serif',
-    }, g).textContent = '水平仪';
   }
 
   function ensureDefs(svg) {
@@ -372,13 +317,10 @@
     const p = m.p2;
     const y0 = p.y + 92;
 
-    S.el('path', {
-      d: 'M ' + p.x + ' ' + (p.y + 6) +
-         ' C ' + (p.x - 6) + ' ' + (p.y + 25) + ', ' + (p.x + 17) + ' ' + (p.y + 30) + ', ' +
-         (p.x + 7) + ' ' + (p.y + 47) +
-         ' C ' + (p.x - 3) + ' ' + (p.y + 59) + ', ' + (p.x - 6) + ' ' + (p.y + 69) + ', ' +
-         p.x + ' ' + (p.y + 82),
-      fill: 'none', stroke: 'url(#steelyardIron)', 'stroke-width': 4.2,
+    S.el('line', {
+      x1: p.x, y1: p.y + 6,
+      x2: p.x, y2: p.y + 82,
+      stroke: '#6b7280', 'stroke-width': 3.6,
       'stroke-linecap': 'round',
     }, g);
 
