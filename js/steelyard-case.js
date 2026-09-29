@@ -556,76 +556,128 @@
     }, g);
   }
 
-  function drawPrecisionRow(g, y, label, cfg, baseMassKg, deltaKg, ratioLabel, accent) {
-    const pivotX = 245;
-    const hookX = pivotX - cfg.resistanceArm;
-    const rodEnd = 735;
-    const x1 = pivotX + baseMassKg * cfg.resistanceArm / cfg.poiseMassKg;
-    const x2 = pivotX + (baseMassKg + deltaKg) * cfg.resistanceArm / cfg.poiseMassKg;
+  function drawPrecisionRow(g, y, label, cfg, ratio, accent, detail) {
+    const xStart = 315;
+    const xEnd = 735;
+    const baseGap = 72;
+    const gap = baseGap * ratio;
+    const x1 = 455;
+    const x2 = x1 + gap;
 
-    extText(g, 45, y - 28, label, { size: 14, weight: 800, fill: accent });
-    S.el('line', {
-      x1: Math.max(55, hookX - 24), y1: y,
-      x2: rodEnd, y2: y,
-      stroke: '#8b5e34', 'stroke-width': 13, 'stroke-linecap': 'round',
-    }, g);
-    S.el('circle', { cx: pivotX, cy: y, r: 7, fill: '#0f766e' }, g);
-    S.el('line', {
-      x1: hookX, y1: y + 4, x2: hookX, y2: y + 52,
-      stroke: '#64748b', 'stroke-width': 2.5,
-    }, g);
+    // 行标题 + 当前改变的参数
+    extText(g, 55, y - 45, label, { size: 15, weight: 800, fill: accent });
+    extText(g, 55, y - 20, detail, { size: 12, weight: 600, fill: '#64748b' });
 
-    drawTinyPoise(g, x1, y + 4, '#94a3b8');
-    drawTinyPoise(g, x2, y + 4, accent);
-
-    extText(g, x1, y - 12, baseMassKg.toFixed(1) + ' kg', {
-      size: 11, anchor: 'middle', fill: '#64748b',
+    // 局部放大的秤杆刻度。这里只比较“两个平衡位置的间距”。
+    extText(g, xStart, y - 38, '秤杆局部放大', {
+      size: 11, weight: 600, fill: '#94a3b8',
     });
-    extText(g, x2, y - 12, (baseMassKg + deltaKg).toFixed(1) + ' kg', {
-      size: 11, anchor: 'middle', fill: accent,
+    S.el('line', {
+      x1: xStart, y1: y,
+      x2: xEnd, y2: y,
+      stroke: '#9a6a3a', 'stroke-width': 12, 'stroke-linecap': 'round',
+    }, g);
+
+    for (let x = xStart + 16; x < xEnd - 8; x += 22) {
+      S.el('line', {
+        x1: x, y1: y - 6,
+        x2: x, y2: y + 6,
+        stroke: '#5f4429', 'stroke-width': 1.4, opacity: 0.65,
+      }, g);
+    }
+
+    // 1.0 kg 平衡位置
+    S.el('line', {
+      x1: x1, y1: y - 25,
+      x2: x1, y2: y + 25,
+      stroke: '#2563eb', 'stroke-width': 5,
+      'stroke-linecap': 'round',
+    }, g);
+    S.el('circle', {
+      cx: x1, cy: y, r: 7,
+      fill: '#2563eb', stroke: '#ffffff', 'stroke-width': 2,
+    }, g);
+    extText(g, x1, y - 33, '1.0 kg', {
+      size: 12, anchor: 'middle', fill: '#1d4ed8', weight: 800,
     });
 
-    const by = y - 50;
+    // 1.1 kg 平衡位置
     S.el('line', {
-      x1: x1, y1: by, x2: x2, y2: by,
-      stroke: accent, 'stroke-width': 2.5,
+      x1: x2, y1: y - 25,
+      x2: x2, y2: y + 25,
+      stroke: '#ea580c', 'stroke-width': 5,
+      'stroke-linecap': 'round',
     }, g);
-    S.el('line', {
-      x1, y1: by - 5, x2: x1, y2: by + 5,
-      stroke: accent, 'stroke-width': 2,
+    S.el('circle', {
+      cx: x2, cy: y, r: 7,
+      fill: '#ea580c', stroke: '#ffffff', 'stroke-width': 2,
     }, g);
-    S.el('line', {
-      x1: x2, y1: by - 5, x2: x2, y2: by + 5,
-      stroke: accent, 'stroke-width': 2,
-    }, g);
-    extText(g, (x1 + x2) / 2, by - 8, ratioLabel, {
-      size: 12, anchor: 'middle', fill: accent, weight: 800,
+    extText(g, x2, y - 33, '1.1 kg', {
+      size: 12, anchor: 'middle', fill: '#c2410c', weight: 800,
     });
+
+    // 从旧平衡位置到新平衡位置的位移箭头。
+    const ay = y + 48;
+    S.el('line', {
+      x1: x1 + 4, y1: ay,
+      x2: x2 - 4, y2: ay,
+      stroke: accent, 'stroke-width': 3,
+    }, g);
+    S.el('path', {
+      d: 'M ' + (x2 - 4) + ' ' + ay +
+         ' l -10 -6 l 0 12 z',
+      fill: accent,
+    }, g);
+    extText(g, (x1 + x2) / 2, ay + 24,
+      '秤砣需移动 Δx ＝ ' + ratio.toFixed(2) + '×',
+      { size: 13, anchor: 'middle', fill: accent, weight: 800 }
+    );
   }
 
   function drawPrecisionExtension(g, data) {
     extText(g, 42, 35, '拓展实验｜怎样提高杆秤精度（分辨能力）', {
       size: 18, weight: 800, fill: '#0f766e',
     });
-    extText(g, 42, 61, '同样增加 0.1 kg，比较秤砣重新平衡时需要移动多远。', {
-      size: 13, weight: 500, fill: '#64748b',
+
+    // 把控制变量先说清楚，学生只比较“秤砣移动距离”。
+    S.el('rect', {
+      x: 42, y: 50, width: 716, height: 42, rx: 10,
+      fill: '#eff6ff', stroke: '#bfdbfe', 'stroke-width': 1.2,
+    }, g);
+    extText(g, 400, 76, '同一个变化：物体质量 1.0 kg → 1.1 kg（增加 0.1 kg）', {
+      size: 13, anchor: 'middle', fill: '#1e3a8a', weight: 800,
     });
 
-    const baseMass = 1.0;
+    const changedDetail = data.strategy.id === 'lighterPoise'
+      ? '改动：秤砣由 0.56 kg 减小到 0.38 kg'
+      : '改动：增大支点到挂钩的距离（增大阻力臂）';
+
     drawPrecisionRow(
-      g, 155, '原方案',
-      data.base, baseMass, data.deltaKg,
-      '位置差 = 1.00×', '#64748b'
-    );
-    drawPrecisionRow(
-      g, 300, data.strategy.name,
-      data.changed, baseMass, data.deltaKg,
-      '位置差 = ' + data.spacingRatio.toFixed(2) + '×', '#b45309'
+      g, 175,
+      '原方案',
+      data.base,
+      1,
+      '#64748b',
+      '秤砣 0.56 kg；其余条件不变'
     );
 
-    extText(g, 42, 395, '位置差越大，相邻质量越容易区分；这里表示“分辨能力提高”，不等同于所有测量误差都消失。', {
-      size: 12, weight: 600, fill: '#475569',
-    });
+    drawPrecisionRow(
+      g, 315,
+      data.strategy.name,
+      data.changed,
+      data.spacingRatio,
+      '#b45309',
+      changedDetail
+    );
+
+    S.el('rect', {
+      x: 42, y: 378, width: 716, height: 30, rx: 8,
+      fill: '#f0fdfa', stroke: '#99f6e4', 'stroke-width': 1,
+    }, g);
+    extText(g, 400, 398,
+      '同样增加 0.1 kg → 改进后秤砣移动更远 → 相邻质量更容易区分',
+      { size: 12, anchor: 'middle', fill: '#0f766e', weight: 800 }
+    );
   }
 
   function rangeGeometry(strategyId, changed) {

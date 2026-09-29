@@ -594,15 +594,14 @@
       if (data && readout && core) {
         if (precision) {
           readout.innerHTML =
-            '<b>' + data.strategy.name + '</b><br>' +
-            '同样增加 ' + data.deltaKg.toFixed(1) + ' kg：秤砣位移由 1.00× 变为 <b>' +
-            data.spacingRatio.toFixed(2) + '×</b><br>' +
-            '对应最大量程：' + data.base.maxMass.toFixed(2) + ' kg → ' +
-            data.changed.maxMass.toFixed(2) + ' kg';
+            '<b>控制变量：物体都是从 1.0 kg 增加到 1.1 kg</b><br>' +
+            '原方案：秤砣需移动 <b>1.00×</b><br>' +
+            '改进后：秤砣需移动 <b>' + data.spacingRatio.toFixed(2) + '×</b><br>' +
+            '结论：同样增加 0.1 kg，秤砣移动得更远，更容易区分相邻质量。';
           core.textContent =
             data.strategy.summary +
             (data.rangeRatio < 0.999
-              ? ' 代价是最大量程会减小。'
+              ? ' 需要同时注意：这种改进会使最大量程减小。'
               : '');
         } else {
           readout.innerHTML =
