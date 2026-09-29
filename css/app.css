@@ -769,3 +769,11 @@ table.data-table tr.ok-row td { background: #ecfdf5; }
   .steelyard-experiment .btn { font-size: 15px; padding: 8px; }
   .experiment-phase { font-size: 17px; }
 }
+
+/* 保留足够高度给杆秤；状态与结论统一放在图上方。 */
+header.app-header { height: auto; min-height: var(--header-h); padding-top: 6px; padding-bottom: 6px; }
+.steelyard-experiment { gap: 8px; padding: 14px 18px 10px; }
+.experiment-phase { flex-shrink: 0; font-size: 21px; line-height: 1.45; }
+.experiment-phase.is-conclusion { background: #ecfdf5; color: #115e59; border-radius: 8px; padding: 8px 12px; font-weight: 700; }
+.steelyard-experiment svg { flex: 1 1 auto; min-height: 290px; }
+.steelyard-experiment h2, .experiment-methods, .experiment-actions, .experiment-result, .steelyard-experiment details, .steelyard-experiment small { flex-shrink: 0; }

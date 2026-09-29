@@ -1,11 +1,13 @@
 /* 杆秤拓展：统一长度比例的理想杠杆模型；忽略杆重、摩擦和形变。 */
 (function (global) {
   'use strict';
-  const base = { poise: .5, arm: 100, travel: 480 };
+  const rangeBase = { poise: .5, arm: 100, travel: 480 };
+  const precisionBase = { poise: .1, arm: 100, travel: 650 };
+  let base = rangeBase;
   const choices = {
     precision: [
-      {name: '换轻一点的秤砣', poise: .25, arm: 100, travel: 480},
-      {name: '增大挂钩到支点的距离', poise: .5, arm: 150, travel: 480}
+      {name: '换轻一点的秤砣', poise: .05, arm: 100, travel: 650},
+      {name: '增大挂钩到支点的距离', poise: .1, arm: 150, travel: 650}
     ],
     range: [
       {name: '换更重的秤砣', poise: .75, arm: 100, travel: 480},
@@ -22,9 +24,9 @@
   const text = (x,y,t,size=20,color='#334155',anchor='start') => `<text x="${x}" y="${y}" font-size="${size}" font-weight="650" fill="${color}" text-anchor="${anchor}">${t}</text>`;
   function sample(c, changed, p) {
     if (mode === 'precision') {
-      const mass = p < .18 ? 1 : 1.1;
+      const mass = p < .18 ? .2 : .3;
       const move = clamp((p-.35)/.5);
-      return {mass, x:position(c,1)+position(c,.1)*move, old:position(c,1), done:p===1};
+      return {mass, x:position(c,.2)+position(c,.1)*move, old:position(c,.2), done:p===1};
     }
     const start = limit(base), end = limit(choices.range[selected]);
     const mass = start + (end-start)*clamp((p-.18)/.65);
@@ -39,9 +41,9 @@
     const rad=tilt*Math.PI/180;
     const point = x => [ox+x*Math.cos(rad),y+x*Math.sin(rad)];
     const hook=point(-c.arm), poise=point(a.x), end=point(c.travel);
-    let s = text(32,y-56,changed?'改变后的杆秤':'原来的杆秤',23,color);
-    s += text(310,y-56,`秤砣 ${fmt(c.poise*1000)} g`,20,color);
-    if(changed) s+=text(950,y-56,choices[mode][selected].name,20,color,'end');
+    let s = text(32,y-48,changed?'改变后的杆秤':'原来的杆秤',23,color);
+    s += text(310,y-48,`秤砣 ${fmt(c.poise*1000)} g`,20,color);
+    if(changed) s+=text(950,y-48,choices[mode][selected].name,20,color,'end');
     s+=line(ox,y-42,ox,y,'#64748b',4);
     s+=`<g transform="rotate(${tilt} ${ox} ${y})">`;
     s+=line(ox-170,y,ox+c.travel,y,'#a47545',12);
@@ -49,12 +51,12 @@
     s+=line(ox+c.travel,y-12,ox+c.travel,y+12,color,4);
     s+=`</g><circle cx="${ox}" cy="${y}" r="7" fill="#0f766e"/>`;
     s+=text(ox-10,y-15,'支点',18,'#0f766e','end');
-    const count = Math.max(1,Math.ceil(a.mass/.5));
-    s+=line(hook[0],hook[1],hook[0],y+64-(count-1)*5,'#64748b');
-    for(let i=0;i<count;i++) s+=`<rect x="${hook[0]-35}" y="${y+64-i*5}" width="70" height="5" rx="2" fill="${i%2?'#94a3b8':'#64748b'}"/>`;
-    s+=text(hook[0],y+96,`${fmt(a.mass)} kg`,25,'#1e293b','middle');
-    if(mode==='precision' && p>=.18)s+=text(hook[0],y+122,'＋100 g',18,'#c2410c','middle');
-    const size=13*Math.sqrt(c.poise/.5);
+    const count = Math.max(1,Math.ceil(a.mass/(mode==='precision'?.1:.5)-1e-8));
+    s+=line(hook[0],hook[1],hook[0],y+40-(count-1)*5,'#64748b');
+    for(let i=0;i<count;i++) s+=`<rect x="${hook[0]-35}" y="${y+40-i*5}" width="70" height="5" rx="2" fill="${i%2?'#94a3b8':'#64748b'}"/>`;
+    s+=text(hook[0],y+76,mode==='precision'?`${fmt(a.mass*1000)} g`:`${fmt(a.mass)} kg`,25,'#1e293b','middle');
+    if(mode==='precision' && p>=.18)s+=text(hook[0]+52,y+76,'＋100 g',20,'#c2410c');
+    const size=17*Math.sqrt(c.poise/base.poise);
     s+=line(poise[0],poise[1],poise[0],poise[1]+25,color);
     s+=`<path d="M${poise[0]-size} ${poise[1]+25} l${-size*.4} 26 q${size*1.4} 12 ${size*2.8} 0 l${-size*.4} -26 Z" fill="${color}"/>`;
     if(mode==='range') {
@@ -63,7 +65,7 @@
     } else if(p>=.35) {
       const old=ox+a.old, now=ox+a.x;
       s+=line(old,y,old,y+50,'#94a3b8',2,'stroke-dasharray="4 4"');
-      s+=`<path d="M${old-13} ${y+25} l-5 26 q18 12 36 0 l-5 -26 Z" fill="none" stroke="#94a3b8" stroke-dasharray="4 4"/>`;
+      s+=`<path d="M${old-size} ${y+25} l${-size*.4} 26 q${size*1.4} 12 ${size*2.8} 0 l${-size*.4} -26 Z" fill="none" stroke="#94a3b8" stroke-dasharray="4 4"/>`;
       if(now-old>1)s+=line(old,y+78,now,y+78,color,4)+`<path d="M${now} ${y+78} l-7 -5 v10 Z" fill="${color}"/>`;
       if(a.done)s+=text(now+12,y+85,'移动距离',18,color);
     }
@@ -75,23 +77,15 @@
   }
   function draw() {
     const changed=choices[mode][selected], done=progress===1;
-    let graphic=row(base,false,75,progress)+row(changed,true,275,progress);
-    if(mode==='precision' && done) {
-      graphic+=text(32,429,'移动距离对比',20)+text(32,460,'两者均放大3倍',18);
-      [base,changed].forEach((c,i)=>{
-        const y=432+i*32, distance=position(c,.1)*3;
-        graphic+=text(310,y+6,i?'改变后':'原来',18,'#475569','end');
-        graphic+=line(330,y,330+distance,y,i?'#0f766e':'#475569',7);
-        graphic+=text(350+distance,y+6,fmt(position(c,.1)/position(base,.1))+'份',19);
-      });
-    }
-    panel.querySelector('svg').setAttribute('viewBox',mode==='precision'?'0 0 1000 490':'0 0 1000 410');
+    let graphic=row(base,false,65,progress)+row(changed,true,245,progress);
+    panel.querySelector('svg').setAttribute('viewBox','0 0 1000 355');
     panel.querySelector('svg').innerHTML=graphic;
     const phase=panel.querySelector('.experiment-phase');
     phase.textContent= mode==='precision'
-      ? progress===0?'两把秤都已平衡：物体质量为1.0 kg':progress<.35?'同时增加100 g，原来的平衡被打破':!done?'移动秤砣，重新达到平衡':'同样增加100 g，哪把秤的秤砣移动得更远？'
+      ? progress===0?'两把秤都已平衡：物体质量为200 g':progress<.35?'同时增加100 g，原来的平衡被打破':!done?'移动秤砣，重新达到平衡':'同样增加100 g，秤砣移动得更远，两个质量对应的位置就更容易分清。'
       : progress===0?'原秤已到最大称量值；改进后的秤砣还能向外移动':progress<.94?'同步增加质量：观察哪把秤还能保持平衡':'恢复至各自最大可称质量，比较量程';
-    panel.querySelector('.experiment-result').hidden=!done;
+    panel.querySelector('.experiment-result').hidden=!done || mode==='precision';
+    phase.classList.toggle('is-conclusion',done && mode==='precision');
     panel.querySelector('.experiment-result').textContent=mode==='precision'
       ?'同样增加100 g，秤砣移动得更远，两个质量对应的位置就更容易分清。'
       :`最大可称质量：${fmt(limit(base))} kg → ${fmt(limit(changed))} kg`;
@@ -114,15 +108,16 @@
   }
   function mount(nextMode) {
     if(panel && mode===nextMode)return;
-    close();mode=nextMode;selected=0;
+    close();mode=nextMode;base=mode==='precision'?precisionBase:rangeBase;selected=0;
     document.getElementById('labLife').classList.add('experiment-open');
     panel=document.createElement('section');panel.className='steelyard-experiment';
     panel.innerHTML=`<h2>${mode==='precision'?'怎样让杆秤更容易分辨质量的微小变化？':'怎样增大杆秤的量程？'}</h2>
-      <div class="experiment-methods">${choices[mode].map((c,i)=>`<button class="btn" data-choice="${i}">${c.name}</button>`).join('')}</div>
       <p class="experiment-phase" aria-live="polite"></p>
-      <svg viewBox="0 0 1000 460" role="img" aria-label="上下两把完整杆秤，按相同长度比例比较"></svg>
+      <div class="experiment-methods">${choices[mode].map((c,i)=>`<button class="btn" data-choice="${i}">${c.name}</button>`).join('')}</div>
+      <svg viewBox="0 0 1000 355" role="img" aria-label="上下两把完整杆秤，按相同长度比例比较"></svg>
+      <p class="experiment-result" hidden></p>
       <div class="experiment-actions"><button class="btn primary" data-play>${mode==='precision'?'增加100 g，观察变化':'开始比较'}</button><button class="btn" data-replay>重播</button></div>
-      <p class="experiment-result" hidden></p><details hidden><summary></summary><p></p></details>
+      <details hidden><summary></summary><p></p></details>
       <small>教学简化模型：忽略杆重、摩擦和形变；两把秤使用相同长度比例。</small>`;
     document.querySelector('#labLife .stage').appendChild(panel);
     const buttons=panel.querySelectorAll('[data-choice]');
