@@ -2,4 +2,5 @@ node_modules/
 qa-artifacts/
 qa-artifacts-calf/
 qa-artifacts-controls/
+qa-artifacts-neck/
 simple-machine-server.log

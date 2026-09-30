@@ -70,10 +70,13 @@
       id: 'neck',
       presetId: 'neck',
       name: '低头 / 抬头',
-      action: '观察：头颈屈伸',
-      whyO: '寰枕关节附近可简化为支点 O；颈后肌群提供动力，头部重力竖直向下。',
-      anatomy: '局部聚焦：颅骨、寰椎、枢椎和颈椎；颈后肌群提供动力。',
-      paramLabel: '头位（低 → 抬）',
+      sample: true,
+      leverType: '第一类杠杆（支点居中）',
+      abstractSummary: '后侧肌肉拉力 F₁｜支点 O｜前侧头部重力 G；两个力产生相反的转动作用。',
+      action: '观察：颈后肌怎样让头部保持平衡？',
+      whyO: '头部简化为杠杆：颈后肌牵拉后脑，产生抬头作用；头部重力产生低头作用。',
+      anatomy: '局部聚焦：头骨与颈部支撑骨骼；重点显示左右头夹肌及其附着关系。',
+      paramLabel: '头位（低头 → 抬回平视）',
       filmTip: '侧拍头颈肩；慢低头再抬头，身体不要转动。',
       fallback(t) {
         const O = K.v(328, 228);
@@ -230,7 +233,21 @@
       return msg;
     }
 
-    return '当前动作保留为后续模板。已完成“举哑铃”和“踮脚”两个样板。';
+    if (e.id === 'neck') {
+      const hints = {
+        1: '红色的是颈后肌（以头夹肌为例）：上端附着在耳后、后脑区域，下方连接颈背部。抬头时缩短，缓慢低头时受控拉长。',
+        2: '支点 O：枕寰关节附近的等效支点。把头部看作一个整体，绕 O 小幅转动。',
+        3: '动力 F₁：左右头夹肌牵拉头部，简化为一个等效拉力；B 表示等效作用点，箭头沿肌肉方向指向颈背部。',
+        4: '阻力 G：头部重力从重心 A 竖直向下。重力使头部有低头趋势，颈后肌拉力产生抬头作用。',
+        5: 'l₁、l₂ 都是 O 到力的作用线的垂直距离，不能直接把 OB、OA 当作力臂。平衡时 F₁l₁＝Gl₂。',
+        6: '拖动头位或播放动作：肌肉上端随头骨移动，下方附着区域保持稳定；肌肉方向与两条力臂一起变化。',
+        7: '人体与杠杆使用同一套 O、A、B 和作用线。向下拉后脑，可以使前面的脸抬起来。',
+      };
+      let msg=hints[step] || '';
+      if (step>=5 && isFinite(ratio)) msg+=' 当前姿态保持平衡所需 F₁≈'+g.f1.toFixed(0)+' N（教学示意）。';
+      return msg;
+    }
+    return '当前动作保留为后续模板。';
   }
 
   function updateTemplateCard() {
@@ -284,6 +301,13 @@
     outlinedLabel(layer, m2.x, m2.y + 30, 'l₂', C.arm2, 'middle', 16);
   }
 
+  function drawNeckArmLabels(layer,g) {
+    const m1=K.add(g.O,K.scale(K.sub(g.a1.foot,g.O),.6));
+    const m2=K.add(g.O,K.scale(K.sub(g.a2.foot,g.O),.6));
+    outlinedLabel(layer,m1.x+12,m1.y+28,'l₁',C.arm1,'start',16);
+    outlinedLabel(layer,m2.x-8,m2.y+28,'l₂',C.arm2,'end',16);
+  }
+
   function drawAbstractModel(layer, g) {
     S.el('rect', {
       x: 24, y: 20, width: 752, height: 372, rx: 18,
@@ -293,23 +317,30 @@
     // 把真实人体上得到的 O / P₁ / P₂ 原位置保留下来，只去掉解剖细节。
     // 杠杆主体延伸到离 O 更远的作用点：举哑铃是阻力端，踮脚则是跟腱动力端。
     const leverEnd = K.dist(g.O, g.p1) > K.dist(g.O, g.p2) ? g.p1 : g.p2;
-    S.el('line', {
-      x1: g.O.x, y1: g.O.y, x2: leverEnd.x, y2: leverEnd.y,
+    S.el(ex().id === 'neck' ? 'polyline' : 'line', {
+      points: ex().id === 'neck' ? [g.p1,g.O,g.p2].map(p=>p.x+','+p.y).join(' ') : undefined,
+      fill: 'none', x1: g.O.x, y1: g.O.y, x2: leverEnd.x, y2: leverEnd.y,
       stroke: '#475569', 'stroke-width': 10, 'stroke-linecap': 'round', opacity: 0.88,
     }, layer);
     S.el('circle', { cx: g.p1.x, cy: g.p1.y, r: 6, fill: C.F1 }, layer);
     S.el('circle', { cx: g.p2.x, cy: g.p2.y, r: 6, fill: C.F2 }, layer);
-    S.drawPivot(layer, g.O);
+    S.drawPivot(layer, g.O, ex().id==='neck' ? ' ' : undefined);
+    if (ex().id==='neck') outlinedLabel(layer,g.O.x-4,g.O.y+40,'O','#111827','middle',16);
 
     const px1 = 52 + Math.min(96, Math.sqrt(Math.max(g.f1, 1)) * 4.0);
     S.drawForceArrow(layer, g.p1, g.d1, px1, C.F1, 'F₁', { O: g.O, scale: 1.08 });
-    S.drawForceArrow(layer, g.p2, g.d2, 72, C.F2, 'F₂', { O: g.O });
-    S.drawForceLine(layer, g.p1, g.d1, 190);
-    S.drawForceLine(layer, g.p2, g.d2, 190);
-    const calf = ex().id === 'calf';
-    S.drawArm(layer, g.O, g.a1.foot, calf ? '' : 'l₁', false, C.arm1, g.d1);
-    S.drawArm(layer, g.O, g.a2.foot, calf ? '' : 'l₂', false, C.arm2, g.d2);
+    S.drawForceArrow(layer, g.p2, g.d2, 72, C.F2, ex().id === 'neck' ? 'G' : 'F₂', { O: g.O });
+    S.drawForceLine(layer, g.p1, g.d1, ex().id==='neck' ? 110 : 190);
+    S.drawForceLine(layer, g.p2, g.d2, ex().id==='neck' ? 110 : 190);
+    const calf = ex().id === 'calf', neck=ex().id==='neck';
+    S.drawArm(layer, g.O, g.a1.foot, calf || neck ? '' : 'l₁', false, C.arm1, g.d1);
+    S.drawArm(layer, g.O, g.a2.foot, calf || neck ? '' : 'l₂', false, C.arm2, g.d2);
     if (calf) drawCalfArmLabels(layer, g);
+    if (neck) drawNeckArmLabels(layer,g);
+    if (ex().id === 'neck') {
+      outlinedLabel(layer,g.p1.x+14,g.p1.y-14,'B',C.F1,'start',16);
+      outlinedLabel(layer,g.p2.x-14,g.p2.y-14,'A',C.F2,'end',16);
+    }
 
     S.el('text', {
       x: 44, y: 52, fill: '#0f766e', 'font-size': 20, 'font-weight': 800,
@@ -361,7 +392,8 @@
     // 分步揭示：1 解剖；2 O；3 F₁；4 F₂；5 力臂；6 动态；7 抽象。
     if (step >= 2) {
       // 已有解剖名称的支点不再重复绘制默认的 O。
-      S.drawPivot(Ldraw, g.O, e.id === 'calf' || e.id === 'curl' ? ' ' : undefined);
+      S.drawPivot(Ldraw, g.O, e.id === 'calf' || e.id === 'curl' || e.id === 'neck' ? ' ' : undefined);
+      if (e.id === 'neck') outlinedLabel(Ldraw,g.O.x-4,g.O.y+40,'支点 O','#111827','middle',15);
       if (e.id === 'curl' || e.id === 'calf') {
         S.el('text', {
           x: e.id === 'calf' ? g.O.x - 28 : g.O.x + 34,
@@ -377,12 +409,18 @@
       const px1 = 46 + Math.min(92, Math.sqrt(Math.max(g.f1, 1)) * 4.2);
       S.drawForceArrow(
         Ldraw, g.p1, g.d1, px1, C.F1,
-        e.id === 'calf' ? '' : ('F₁≈' + g.f1.toFixed(0) + ' N'),
+        e.id === 'calf' || e.id === 'neck' ? '' : ('F₁≈' + g.f1.toFixed(0) + ' N'),
         { O: g.O, scale: 1.05, labelOffset: 68 }
       );
       if (e.id === 'calf') {
         outlinedLabel(Ldraw, g.p1.x + 74, g.p1.y - 92,
           'F₁≈' + g.f1.toFixed(0) + ' N', C.F1, 'start', 15);
+      }
+      if (e.id === 'neck') {
+        S.el('circle',{cx:g.p1.x,cy:g.p1.y,r:5,fill:C.F1,stroke:'#fff','stroke-width':2},Ldraw);
+        outlinedLabel(Ldraw,g.p1.x+14,g.p1.y-14,'B',C.F1,'start',16);
+        const tip=K.add(g.p1,K.scale(g.d1,px1));
+        outlinedLabel(Ldraw,tip.x+18,tip.y+8,'肌肉拉力 F₁',C.F1,'start',15);
       }
       if (e.id === 'curl' || e.id === 'calf') {
         S.el('circle', {
@@ -404,12 +442,18 @@
       const px2 = 72;
       S.drawForceArrow(
         Ldraw, g.p2, g.d2, px2, C.F2,
-        e.id === 'calf' ? '' : ('F₂=' + g.f2 + ' N'),
+        e.id === 'calf' || e.id === 'neck' ? '' : ('F₂=' + g.f2 + ' N'),
         { O: g.O, labelOffset: 62 }
       );
       if (e.id === 'calf') {
         outlinedLabel(Ldraw, g.p2.x + 54, g.p2.y + 60,
           'F₂=' + g.f2 + ' N', C.F2, 'start', 15);
+      }
+      if (e.id === 'neck') {
+        S.el('circle',{cx:g.p2.x,cy:g.p2.y,r:5,fill:C.F2,stroke:'#fff','stroke-width':2},Ldraw);
+        outlinedLabel(Ldraw,g.p2.x-14,g.p2.y-14,'重心 A',C.F2,'end',15);
+        const tip=K.add(g.p2,K.scale(g.d2,px2));
+        outlinedLabel(Ldraw,tip.x-14,tip.y+18,'重力 G',C.F2,'end',15);
       }
       drawDumbbell(Ldraw, g.p2);
       if (e.id === 'curl' || e.id === 'calf') {
@@ -430,12 +474,13 @@
     }
 
     if (step >= 5) {
-      S.drawForceLine(Ldraw, g.p1, g.d1, 190);
-      S.drawForceLine(Ldraw, g.p2, g.d2, 190);
-      const calf = e.id === 'calf';
-      S.drawArm(Ldraw, g.O, g.a1.foot, calf ? '' : 'l₁', false, C.arm1, g.d1);
-      S.drawArm(Ldraw, g.O, g.a2.foot, calf ? '' : 'l₂', false, C.arm2, g.d2);
+      S.drawForceLine(Ldraw, g.p1, g.d1, e.id==='neck' ? 110 : 190);
+      S.drawForceLine(Ldraw, g.p2, g.d2, e.id==='neck' ? 110 : 190);
+      const calf = e.id === 'calf', neck=e.id==='neck';
+      S.drawArm(Ldraw, g.O, g.a1.foot, calf || neck ? '' : 'l₁', false, C.arm1, g.d1);
+      S.drawArm(Ldraw, g.O, g.a2.foot, calf || neck ? '' : 'l₂', false, C.arm2, g.d2);
       if (calf) drawCalfArmLabels(Ldraw, g);
+      if (neck) drawNeckArmLabels(Ldraw,g);
       if (K.dist(g.O, g.a1.foot) > 4) {
         S.drawRightAngle(Ldraw, g.a1.foot, K.sub(g.a1.foot, g.O), g.d1, 8, C.arm1);
       }
@@ -444,7 +489,10 @@
       }
     }
 
-    if (abstractNow) drawAbstractModel(Lui, g);
+    if (abstractNow) {
+      if (e.id==='neck') S.clear(Ldraw);
+      drawAbstractModel(Lui, g);
+    }
 
     // 右侧把原“力矩条”改为两条力臂的直观比较。
     const maxArm = Math.max(g.a1.armLen, g.a2.armLen, 1e-6);
@@ -456,7 +504,7 @@
     const m1lab = document.getElementById('bodyM1Lab');
     const m2lab = document.getElementById('bodyM2Lab');
     if (m1lab) m1lab.textContent = '动力臂 l₁（模型）= ' + g.a1.armLen.toFixed(3);
-    if (m2lab) m2lab.textContent = '阻力臂 l₂（模型）= ' + g.a2.armLen.toFixed(3);
+    if (m2lab) m2lab.textContent = (e.id==='neck' ? '重力臂 l₂' : '阻力臂 l₂') + '（模型）= ' + g.a2.armLen.toFixed(3);
 
     const ratio = g.a1.armLen > 1e-6 ? g.a2.armLen / g.a1.armLen : Infinity;
     const cls = document.getElementById('bodyClass');
@@ -465,6 +513,7 @@
         '｜l₂/l₁ ≈ ' + (isFinite(ratio) ? ratio.toFixed(2) : '∞') +
         '｜F₁ ≈ ' + (isFinite(g.f1) ? g.f1.toFixed(0) + ' N' : '很大') + '（示意）';
       if (g.stageName) txt += '｜' + g.stageName;
+      if (e.id==='neck') txt='第一类杠杆｜'+g.cls.type+'杠杆｜平衡所需 F₁≈'+g.f1.toFixed(0)+' N（示意）';
       cls.textContent = txt;
     }
 
@@ -475,7 +524,7 @@
     const po = document.getElementById('bodyParamOut');
     if (pl) pl.textContent = e.paramLabel;
     if (pv) pv.value = state.t;
-    if (po) po.textContent = state.t.toFixed(2);
+    if (po) po.textContent = e.id==='neck' ? (state.t>=.99 ? '平视' : '低头 '+((1-state.t)*13.75).toFixed(1)+'°') : state.t.toFixed(2);
 
     const absBtn = document.getElementById('bodyAbstract');
     if (absBtn) {

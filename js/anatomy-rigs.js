@@ -125,36 +125,25 @@
     neck: {
       id: 'neck',
       label: '低头 / 抬头',
-      camera: { position: [1.15, 0.55, 0.35], target: [0, 0.55, 0], fov: 38 },
-      focusPatterns: [
-        /occipital/i, /cranium/i, /atlas/i, /axis \(c2\)/i, /cervical/i,
-        /splenius/i, /semispinalis/i, /trapezius/i, /sternocleid/i, /skull/i,
-      ],
-      pivotFrom: [/atlas \(c1\)/i, /occipital condyle/i, /atlas(?!\.)/i],
-      movable: [
-        /occipital bone/i, /parietal bone/i, /frontal bone/i, /temporal bone/i,
-        /sphenoid/i, /ethmoid/i, /cranium/i, /neurocranium/i, /viscerocranium/i,
-        /mandible/i, /zygomatic/i, /maxilla/i, /nasal bone/i,
-      ],
-      highlightMuscle: [/splenius/i, /semispinalis/i, /trapezius/i, /suboccipital/i],
-      axis: 'x',
-      angleMin: -0.45,
-      angleMax: 0.35,
-      landmarks(ctx) {
-        const O = ctx.pivotWorld.clone();
-        const com = ctx.centerOf([/cranium/i, /neurocranium/i, /frontal bone/i]) || O.clone().add(ctx.v(0.02, 0.08, 0.03));
-        const nape = ctx.centerOf([/external occipital protuberance/i, /occipital bone/i, /splenius capitis/i]) || O.clone().add(ctx.v(-0.02, 0.04, -0.06));
-        const belly = ctx.centerOf([/splenius/i, /semispinalis/i]) || nape.clone().add(ctx.v(0, -0.06, -0.02));
-        return {
-          O,
-          p1: nape,
-          d1: ctx.dir(nape, belly),
-          p2: com,
-          d2: ctx.v(0, -1, 0),
-          f2: 50,
-          bar: [O, com],
-        };
+      singleSide: false,
+      hideUnfocused: true,
+      focusOnlyHighlightedMuscle: true,
+      camera: { position: [1.15, 0.55, 0], target: [0, 0.55, 0], fov: 32, fitPadding: 1.30, minDistance: .65 },
+      teaching: {
+        joint: '枕寰关节附近的等效支点',
+        bones: '头骨、寰椎、枢椎及颈部支撑骨骼',
+        muscles: '左右头夹肌（代表颈后伸肌）',
+        effort: '头夹肌牵拉头部附着区域，两侧作用简化为动力 F₁',
+        load: '头部重力从重心 A 竖直向下，取 50 N 作课堂示意',
+        note: '把头部视为刚体，上颈部连接简化为固定支点。展示小幅低头到抬回平视；重心、肌肉变形和力值为教学示意。',
       },
+      focusPatterns: [
+        /bone/i, /^atlas \(c1\)/i, /^axis \(c2\)/i, /^vertebra [ct]/i, /^splenius capitis muscle/i,
+      ],
+      pivotFrom: [],
+      movable: [],
+      highlightMuscle: [/^splenius capitis muscle/i],
+      landmarks() { throw new Error('头颈动作需要已校准的头夹肌模板'); },
     },
 
     lift: {

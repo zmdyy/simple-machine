@@ -6,6 +6,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { createCurlRig, isCurlStructure } from './curl-rig.js';
+import { createNeckRig, isNeckStructure } from './neck-rig.js?v=20260930a';
 
 const LOCAL_GLB = 'assets/anatomy/body.glb';
 const CDN_GLB =
@@ -39,6 +40,7 @@ let pivots = {};
 let followGroups = {};
 let kneePivot = null;
 let curlRig = null;
+let neckRig = null;
 let overlayGroup;
 let clock;
 let raf = 0;
@@ -174,6 +176,7 @@ function restoreMeshHome(m) {
 
 function clearPivots() {
   if (curlRig) { curlRig.dispose(); curlRig = null; }
+  if (neckRig) { neckRig.dispose(); neckRig = null; }
   meshes.forEach(restoreMeshHome);
 
   Object.keys(pivots).forEach((id) => {
@@ -203,6 +206,11 @@ function buildPivotFor(actionId) {
   if (actionId === 'curl') {
     curlRig = createCurlRig({ root, modelRoot, meshes });
     pivots.curl = curlRig.pivot;
+    return;
+  }
+  if (actionId === 'neck') {
+    neckRig = createNeckRig({ root, modelRoot, meshes });
+    pivots.neck = neckRig.pivot;
     return;
   }
 
@@ -272,6 +280,12 @@ function setPose(actionId, t) {
     drawOverlay3D();
     return;
   }
+  if (actionId === 'neck' && neckRig) {
+    neckRig.update(t);
+    applyFocusDim();
+    drawOverlay3D();
+    return;
+  }
 
   pivot.rotation.set(0, 0, 0);
   if (kneePivot) kneePivot.rotation.set(0, 0, 0);
@@ -335,6 +349,14 @@ function applyFocusDim() {
       mat.emissive.set(0x000000); mat.emissiveIntensity = 0;
       return;
     }
+    if (state.actionId === 'neck') {
+      m.visible = isNeckStructure(m);
+      const mat = m.userData.baseMat || m.material;
+      mat.opacity = 1; mat.transparent = false; mat.depthWrite = true;
+      mat.emissive.set(type === 'muscle' ? 0x3a1010 : 0x000000);
+      mat.emissiveIntensity = type === 'muscle' ? .12 : 0;
+      return;
+    }
 
     const mat = m.userData.baseMat || m.material;
     if (!mat || !mat.color) return;
@@ -393,6 +415,7 @@ function storeRestPose() {
 function actionFocusMeshes(rig) {
   if (!rig || !rig.focusPatterns) return [];
   if (rig.id === 'curl') return meshes.filter(m => m.userData.restWorld.x > .05 && isCurlStructure(m));
+  if (rig.id === 'neck') return meshes.filter(isNeckStructure);
   return findMeshes(rig.focusPatterns, rig.singleSide !== false, rig.sideSign);
 }
 
@@ -502,7 +525,8 @@ function getLandmarks() {
   const rig = R().RIGS[state.actionId];
   if (!rig || !state.ready) return null;
   const ctx = makeCtx(state.t);
-  const L = state.actionId === 'curl' && curlRig ? curlRig.landmarks() : rig.landmarks(ctx);
+  const L = state.actionId === 'curl' && curlRig ? curlRig.landmarks()
+    : state.actionId === 'neck' && neckRig ? neckRig.landmarks() : rig.landmarks(ctx);
   const loadDir = (L.d2 || new THREE.Vector3(0, -1, 0)).clone().normalize();
 
   // 先在三维世界坐标里完成物理计算，再投影到屏幕。
@@ -862,9 +886,11 @@ function debugSnapshot() {
   const rig = R().RIGS[state.actionId];
   const pivot = pivots[state.actionId] || null;
   const focus = rig ? actionFocusMeshes(rig) : [];
-  const movable = state.actionId === 'curl' && curlRig ? curlRig.moving : rig ? findMeshes(rig.movable || [], rig.singleSide !== false, rig.sideSign) : [];
+  const movable = state.actionId === 'curl' && curlRig ? curlRig.moving
+    : state.actionId === 'neck' && neckRig ? neckRig.moving
+    : rig ? findMeshes(rig.movable || [], rig.singleSide !== false, rig.sideSign) : [];
   const L = state.ready ? getLandmarks() : null;
-  const W = (state.ready && rig) ? (state.actionId === 'curl' && curlRig ? curlRig.landmarks() : rig.landmarks(makeCtx(state.t))) : null;
+  const W = L ? L.world : null;
   const box = rig ? focusBounds(rig) : null;
   const center = box ? box.getCenter(new THREE.Vector3()) : null;
 
@@ -882,7 +908,7 @@ function debugSnapshot() {
 
   return {
     ready: state.ready,
-    assembly: curlRig ? curlRig.diagnostics() : null,
+    assembly: curlRig ? curlRig.diagnostics() : neckRig ? neckRig.diagnostics() : null,
     screenPoints: W ? Object.fromEntries(['O','p1','p2'].map(key => {
       const p=W[key].clone().project(camera);
       return [key, { x:(p.x+1)*.5*canvasEl.clientWidth,
