@@ -1,4 +1,4 @@
-/** Small nodding teaching model for the bundled BodyParts3D asset.
+/** Nodding teaching model for the bundled BodyParts3D asset.
  * Source coordinates are metres before the viewer centres the GLB.
  * Bilateral splenius capitis is represented by one sagittal resultant.
  * This is an equivalent hinge model, not full cervical kinematics.
@@ -9,8 +9,8 @@ import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 export const NECK_CALIBRATION = Object.freeze({
   pivot: [0, 1.550, -0.010],
   headCOM: [0, 1.620, 0.022], // Teaching estimate, not a measured anatomical COM.
-  lowAngle: 0.24,
-  levelAngle: 0,
+  lowAngle: THREE.MathUtils.degToRad(30),
+  highAngle: THREE.MathUtils.degToRad(-10),
   fixedHeight: 1.400,
   headPinnedHeight: 1.552,
 });
@@ -119,7 +119,7 @@ export function createNeckRig({root, modelRoot, meshes}) {
   let angle=0, currentInsertion=insertion.clone();
 
   function update(t) {
-    angle=THREE.MathUtils.lerp(NECK_CALIBRATION.lowAngle,NECK_CALIBRATION.levelAngle,THREE.MathUtils.clamp(t,0,1));
+    angle=THREE.MathUtils.lerp(NECK_CALIBRATION.lowAngle,NECK_CALIBRATION.highAngle,THREE.MathUtils.clamp(t,0,1));
     turn.setFromAxisAngle(axis,angle);
     pivot.quaternion.copy(turn); pivot.updateWorldMatrix(true,true);
     for (const r of records) {
@@ -136,7 +136,7 @@ export function createNeckRig({root, modelRoot, meshes}) {
   function landmarks() {
     const p1=world(currentInsertion), p2=world(rotate(com));
     return {O:world(O),p1,p2,d1:world(origin).sub(p1).normalize(),
-      d2:new THREE.Vector3(0,-1,0),f2:50,bar:[p1,world(O),p2]};
+      d2:new THREE.Vector3(0,-1,0),f2:50,bar:[p1,world(O),p2],angleDegrees:THREE.MathUtils.radToDeg(angle)};
   }
   function diagnostics() {
     let attachmentError=0, fixedDrift=0, surfaceAttachmentError=0,lowerSurfaceAttachmentError=0;

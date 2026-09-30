@@ -76,7 +76,7 @@
       action: '观察：颈后肌怎样让头部保持平衡？',
       whyO: '头部简化为杠杆：颈后肌牵拉后脑，产生抬头作用；头部重力产生低头作用。',
       anatomy: '局部聚焦：头骨与颈部支撑骨骼；重点显示左右头夹肌及其附着关系。',
-      paramLabel: '头位（低头 → 抬回平视）',
+      paramLabel: '头位（低头 → 平视 → 抬头）',
       filmTip: '侧拍头颈肩；慢低头再抬头，身体不要转动。',
       fallback(t) {
         const O = K.v(328, 228);
@@ -236,7 +236,7 @@
     if (e.id === 'neck') {
       const hints = {
         1: '红色的是颈后肌（以头夹肌为例）：上端附着在耳后、后脑区域，下方连接颈背部。抬头时缩短，缓慢低头时受控拉长。',
-        2: '支点 O：枕寰关节附近的等效支点。把头部看作一个整体，绕 O 小幅转动。',
+        2: '支点 O：枕寰关节附近的等效支点。把头部看作一个整体，绕 O 转动。',
         3: '动力 F₁：左右头夹肌牵拉头部，简化为一个等效拉力；B 表示等效作用点，箭头沿肌肉方向指向颈背部。',
         4: '阻力 G：头部重力从重心 A 竖直向下。重力使头部有低头趋势，颈后肌拉力产生抬头作用。',
         5: 'l₁、l₂ 都是 O 到力的作用线的垂直距离，不能直接把 OB、OA 当作力臂。平衡时 F₁l₁＝Gl₂。',
@@ -524,7 +524,12 @@
     const po = document.getElementById('bodyParamOut');
     if (pl) pl.textContent = e.paramLabel;
     if (pv) pv.value = state.t;
-    if (po) po.textContent = e.id==='neck' ? (state.t>=.99 ? '平视' : '低头 '+((1-state.t)*13.75).toFixed(1)+'°') : state.t.toFixed(2);
+    if (po) {
+      const a=g.angleDegrees;
+      po.textContent = e.id==='neck'
+        ? (Number.isFinite(a) ? (Math.abs(a)<.05 ? '平视' : (a>0 ? '低头 ' : '抬头 ')+Math.abs(a).toFixed(1)+'°') : '低头 → 抬头')
+        : state.t.toFixed(2);
+    }
 
     const absBtn = document.getElementById('bodyAbstract');
     if (absBtn) {
@@ -552,11 +557,12 @@
     lastMotionTs = ts;
 
     state.t += motionDir * dt * 0.38;
-    if (state.t >= 0.92) {
-      state.t = 0.92;
+    const low=ex().id==='neck' ? 0 : .08, high=ex().id==='neck' ? 1 : .92;
+    if (state.t >= high) {
+      state.t = high;
       motionDir = -1;
-    } else if (state.t <= 0.08) {
-      state.t = 0.08;
+    } else if (state.t <= low) {
+      state.t = low;
       motionDir = 1;
     }
     render();

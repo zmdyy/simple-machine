@@ -55,24 +55,33 @@ try {
     assert(a.lowerSurfaceAttachmentError<1e-6,'lower tip left supporting bone surface');
     assert(a.fixedDrift<1e-6,'fixed neck attachment moved');
     assert(a.oppositeMoments && a.muscleMoment<0 && a.gravityMoment>0,'muscle and gravity must oppose each other');
-    assert(s.arms.l1>0 && s.arms.l2>0 && s.arms.l1<s.arms.l2,'invalid sagittal moment arms');
+    assert(s.arms.l1>0 && s.arms.l2>0,'invalid sagittal moment arms');
+    assert(Math.abs(s.arms.l1-Math.abs(a.muscleMoment))<1e-9
+      && Math.abs(s.arms.l2-Math.abs(a.gravityMoment))<1e-9,'perpendicular arms disagree with rotational effects');
     assert.equal(a.hiddenMovingBones,0,'parts of the skull, jaw or teeth were left hidden');
     if(poses.length) assert(a.muscleLength<poses.at(-1).assembly.muscleLength,'raising head did not shorten posterior muscle');
     poses.push(s);
-    if(i===0||i===10) await snap(i===0?'neck-low-anatomy':'neck-level-anatomy');
+    if(i===0||i===10) await snap(i===0?'neck-low-anatomy':'neck-raised-anatomy');
   }
+  assert(Math.abs(poses[0].assembly.angleDegrees-30)<1e-9 && Math.abs(poses.at(-1).assembly.angleDegrees+10)<1e-9,'incorrect expanded motion range');
+  assert.equal(await page.locator('#bodyParamOut').textContent(),'抬头 10.0°');
+  const neutral=await setT(.75);
+  assert(Math.abs(neutral.assembly.angleDegrees)<1e-9,'level pose is not neutral');
+  assert.equal(await page.locator('#bodyParamOut').textContent(),'平视');
+  await snap('neck-level-anatomy');
+  await setT(1);
   close(poses[0].worldPoints.O,poses.at(-1).worldPoints.O);
   close(poses[0].assembly.origin,poses.at(-1).assembly.origin);
   assert(poses[0].worldPoints.p2[1]<poses.at(-1).worldPoints.p2[1],'front of head did not rise');
   await page.click('#bodySkip');
   assert(await projectionError()<1,'SVG pivot does not align with anatomy');
-  await snap('neck-level-forces');
+  await snap('neck-raised-forces');
   const beforeAbstract=await snapshot();
   await page.click('#bodyAbstract');
   assert.equal(await page.locator('#bodyAbstract').textContent(),'恢复肌肉骨骼');
   assert.equal(await page.locator('#bodyDraw').evaluate(el=>el.childElementCount),0,'duplicate annotation layers in abstract view');
   close(beforeAbstract.worldPoints.p1,(await snapshot()).worldPoints.p1);
-  await snap('neck-level-abstract');
+  await snap('neck-raised-abstract');
   await setT(0); await snap('neck-low-abstract');
   await page.click('#bodyAbstract');
   assert.equal(await page.locator('#bodyAbstract').textContent(),'简化成杠杆');

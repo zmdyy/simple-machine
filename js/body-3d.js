@@ -6,7 +6,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { createCurlRig, isCurlStructure } from './curl-rig.js';
-import { createNeckRig, isNeckStructure } from './neck-rig.js?v=20260930a';
+import { createNeckRig, isNeckStructure } from './neck-rig.js?v=20260930b';
 
 const LOCAL_GLB = 'assets/anatomy/body.glb';
 const CDN_GLB =
@@ -556,6 +556,7 @@ function getLandmarks() {
       return { x: s.x, y: s.y };
     }),
     stageName: L.stageName,
+    angleDegrees: L.angleDegrees,
     world: Object.assign({}, L, { a1: a1w, a2: a2w, d2: loadDir }),
   };
 }
