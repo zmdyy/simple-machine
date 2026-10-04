@@ -1,0 +1,238 @@
+{
+  "lift": {
+    "samples": 42,
+    "jointSamples": 20,
+    "minHandleBoneClearance": 0.002678996028264635,
+    "maxFingerJointError": 3.3306690738754696e-16,
+    "maxJointError": 6.866350197783356e-16,
+    "maxHandError": 4.509747244882934e-16,
+    "maxAttachmentError": 6.326089538678209e-08,
+    "maxMomentResidual": 2.4158453015843406e-13,
+    "errors": [],
+    "initial": {
+      "calibrated": true,
+      "knee": {
+        "muscleArm": 0.03790993850937702,
+        "oppositeMoments": true
+      },
+      "hip": {
+        "muscleArm": 0.02609697044176202,
+        "oppositeMoments": true
+      },
+      "style": "stoop",
+      "focus": "lumbar",
+      "startDistance": 0.35,
+      "distance": 0.35,
+      "bodyArm": 0.24665783747431752,
+      "loadMoment": 35,
+      "bodyMoment": 73.99735124229525,
+      "totalMoment": 108.99735124229525,
+      "muscleForce": 2179.9470248459047,
+      "trunkDegrees": 75,
+      "kneeDegrees": 8,
+      "comparison": [
+        {
+          "style": "stoop",
+          "distance": 0.35,
+          "loadMoment": 35,
+          "bodyMoment": 73.99735124229525,
+          "bodyArm": 0.24665783747431752,
+          "muscleForce": 2179.9470248459047
+        },
+        {
+          "style": "squat",
+          "distance": 0.35,
+          "loadMoment": 35,
+          "bodyMoment": 37.13421635277236,
+          "bodyArm": 0.12378072117590788,
+          "muscleForce": 1442.6843270554473
+        }
+      ],
+      "pivotLabel": "腰骶部 O",
+      "effortLabel": "腰背肌",
+      "loadLabel": "重物 100 N",
+      "jointError": 2.5438405243138006e-16,
+      "handError": 2.0770370905276122e-16,
+      "fingerJointError": 2.7755575615628914e-16,
+      "maxReachError": 0,
+      "attachmentError": 6.326089538678209e-08,
+      "hands": [
+        {
+          "fingerJointError": 2.7755575615628914e-16,
+          "boxPenetrations": 0,
+          "minHandleRadius": 0.015678996028264634,
+          "gripError": 1.1102230246251565e-16,
+          "wristError": 2.0770370905276122e-16,
+          "fingers": 5,
+          "handMeshes": 27,
+          "tips": [
+            [
+              -0.2045081551542519,
+              0.5781106152200557,
+              0.4586508487415705
+            ],
+            [
+              -0.227825620019651,
+              0.5736826536168395,
+              0.4908239014886363
+            ],
+            [
+              -0.21062926985821084,
+              0.5757847824939756,
+              0.46088572521433674
+            ],
+            [
+              -0.21847019411406365,
+              0.5784834882356396,
+              0.4347646452926143
+            ],
+            [
+              -0.22162013118208174,
+              0.5840018686774782,
+              0.40262655843720274
+            ]
+          ]
+        },
+        {
+          "fingerJointError": 2.603703785810335e-16,
+          "boxPenetrations": 0,
+          "minHandleRadius": 0.015678996028264648,
+          "gripError": 1.1102230246251565e-16,
+          "wristError": 2.0770370905276122e-16,
+          "fingers": 5,
+          "handMeshes": 27,
+          "tips": [
+            [
+              0.20450814769226489,
+              0.5781105910974802,
+              0.4586505720126221
+            ],
+            [
+              0.227825620019651,
+              0.5736826536168393,
+              0.490823797180508
+            ],
+            [
+              0.21062926985821084,
+              0.5757847824939757,
+              0.4608856358073696
+            ],
+            [
+              0.21847019411406365,
+              0.5784834882356396,
+              0.4347647048972591
+            ],
+            [
+              0.2216201311820818,
+              0.5840018686774782,
+              0.4026265062831386
+            ]
+          ]
+        }
+      ],
+      "momentResidual": 5.684341886080802e-14,
+      "muscleNames": [
+        "iliocostalis lumborum muscle",
+        "iliocostalis lumborum muscle",
+        "longissimus thoracis muscle",
+        "longissimus thoracis muscle",
+        "gluteus maximus muscle",
+        "gluteus maximus muscle",
+        "rectus femoris muscle",
+        "vastus lateralis muscle",
+        "vastus medialis muscle",
+        "vastus intermedius muscle",
+        "rectus femoris muscle",
+        "vastus lateralis muscle",
+        "vastus medialis muscle",
+        "vastus intermedius muscle"
+      ],
+      "movingBones": 215,
+      "visibleMuscles": 14,
+      "footBones": 54,
+      "bodyWeight": 300,
+      "boxWeight": 100,
+      "muscleArm": 0.05
+    }
+  },
+  "calf": {
+    "passed": true,
+    "consoleErrors": [],
+    "poses": [
+      {
+        "name": "calf-low",
+        "t": 0.08,
+        "focusCount": 33,
+        "movableCount": 12,
+        "followCount": 3,
+        "arms": {
+          "l1": 0.17025828542916555,
+          "l2": 0.12112677016191623
+        },
+        "followOffset": [
+          0,
+          -0.8527574831181752,
+          -0.0009034822168549339
+        ],
+        "cameraTargetDistance": 8.673617379884035e-19
+      },
+      {
+        "name": "calf-mid",
+        "t": 0.5,
+        "focusCount": 33,
+        "movableCount": 12,
+        "followCount": 3,
+        "arms": {
+          "l1": 0.16681931647532927,
+          "l2": 0.10475832342013862
+        },
+        "followOffset": [
+          0,
+          -0.8282158155915978,
+          0.01572926894759208
+        ],
+        "cameraTargetDistance": 8.673617379884035e-19
+      },
+      {
+        "name": "calf-high",
+        "t": 0.92,
+        "focusCount": 33,
+        "movableCount": 12,
+        "followCount": 3,
+        "arms": {
+          "l1": 0.15800897587430224,
+          "l2": 0.08367113209484044
+        },
+        "followOffset": [
+          0,
+          -0.8078935131388377,
+          0.03731504850965599
+        ],
+        "cameraTargetDistance": 8.673617379884035e-19
+      }
+    ],
+    "switchStable": true,
+    "cameraInvariant": true,
+    "secondClassRelation": true
+  },
+  "controls": {
+    "passed": true,
+    "widths": [
+      1440,
+      1024,
+      900,
+      768
+    ],
+    "actions": [
+      "calf",
+      "curl",
+      "neck",
+      "lift"
+    ],
+    "abstractRoundTrips": 4,
+    "seventhStepRecovery": true,
+    "explodeRemoved": true,
+    "switchingStopsPlayback": true,
+    "pageErrors": []
+  }
+}

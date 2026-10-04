@@ -6,7 +6,8 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { createCurlRig, isCurlStructure } from './curl-rig.js';
-import { createLiftRig } from './lift-rig.js';
+import { createCalfRig } from './calf-rig.js?v=20261004grip';
+import { createLiftRig } from './lift-rig.js?v=20261004grip';
 import { createNeckRig, isNeckStructure } from './neck-rig.js?v=20260930b';
 
 const LOCAL_GLB = 'assets/anatomy/body.glb';
@@ -42,6 +43,7 @@ let followGroups = {};
 let curlRig = null;
 let neckRig = null;
 let liftRig = null;
+let calfRig = null;
 let liftOptions = {style: 'stoop', distance: .35, includeBody: true};
 let overlayGroup;
 let clock;
@@ -180,6 +182,7 @@ function clearPivots() {
   if (curlRig) { curlRig.dispose(); curlRig = null; }
   if (neckRig) { neckRig.dispose(); neckRig = null; }
   if (liftRig) { liftRig.dispose(); liftRig = null; }
+  if (calfRig) { calfRig.dispose(); calfRig = null; }
   meshes.forEach(restoreMeshHome);
 
   Object.keys(pivots).forEach((id) => {
@@ -201,6 +204,10 @@ function buildPivotFor(actionId) {
 
   clearPivots();
 
+  if (actionId === 'calf') {
+    calfRig = createCalfRig({root,modelRoot,meshes});
+    pivots.calf = calfRig.pivot;followGroups.calf = calfRig.follow;return;
+  }
   if (actionId === 'lift') {
     liftRig = createLiftRig({ root, modelRoot, meshes });
     liftRig.setOptions(liftOptions);
@@ -268,6 +275,9 @@ function setPose(actionId, t) {
   const pivot = pivots[actionId];
   if (!pivot) return;
 
+  if (actionId === 'calf' && calfRig) {
+    calfRig.update(t);applyFocusDim();drawOverlay3D();return;
+  }
   if (actionId === 'lift' && liftRig) {
     liftRig.update(t);
     applyFocusDim();
@@ -313,6 +323,8 @@ function setPose(actionId, t) {
 }
 
 function applyFocusDim() {
+  if (calfRig) calfRig.setVisible(state.showMuscle);
+  if (liftRig) liftRig.setVisible(state.showMuscle);
   const rig = R().RIGS[state.actionId];
   const focus = rig ? rig.focusPatterns : null;
   const hiMus = rig ? rig.highlightMuscle : null;
@@ -326,6 +338,12 @@ function applyFocusDim() {
     m.visible = !!show;
     if (!show) return;
 
+    if (state.actionId === 'calf' && calfRig) {
+      m.visible = calfRig.selected.includes(m);
+      const mat = m.userData.baseMat || m.material;
+      mat.opacity=1;mat.transparent=false;mat.depthWrite=true;mat.emissive.set(0x000000);
+      return;
+    }
     if (state.actionId === 'lift' && liftRig) {
       m.visible = liftRig.selected.includes(m);
       const mat = m.userData.baseMat || m.material;
@@ -406,6 +424,7 @@ function storeRestPose() {
 
 function actionFocusMeshes(rig) {
   if (!rig || !rig.focusPatterns) return [];
+  if (rig.id === 'calf' && calfRig) return calfRig.selected;
   if (rig.id === 'lift' && liftRig) return liftRig.selected;
   if (rig.id === 'curl') return meshes.filter(m => m.userData.restWorld.x > .05 && isCurlStructure(m));
   if (rig.id === 'neck') return meshes.filter(isNeckStructure);
@@ -413,6 +432,7 @@ function actionFocusMeshes(rig) {
 }
 
 function focusBounds(rig) {
+  if (rig.id === 'calf' && calfRig) return calfRig.focusBounds();
   if (rig.id === 'lift' && liftRig) return liftRig.focusBounds();
   const list = actionFocusMeshes(rig);
   if (!list.length) return null;
@@ -519,7 +539,7 @@ function getLandmarks() {
   const rig = R().RIGS[state.actionId];
   if (!rig || !state.ready) return null;
   const ctx = makeCtx(state.t);
-  const L = state.actionId === 'lift' && liftRig ? liftRig.landmarks() : state.actionId === 'curl' && curlRig ? curlRig.landmarks()
+  const L = state.actionId === 'calf' && calfRig ? calfRig.landmarks() : state.actionId === 'lift' && liftRig ? liftRig.landmarks() : state.actionId === 'curl' && curlRig ? curlRig.landmarks()
     : state.actionId === 'neck' && neckRig ? neckRig.landmarks() : rig.landmarks(ctx);
   const loadDir = (L.d2 || new THREE.Vector3(0, -1, 0)).clone().normalize();
 
@@ -846,16 +866,20 @@ async function init() {
     modelRoot.position.sub(center);
     storeRestPose();
 
+    // Build calibrated landmarks before resize/render callbacks can request them.
+    buildPivotFor(state.actionId);
     state.ready = true;
+    setPose(state.actionId,state.t);
+    flyToAction(state.actionId);
     state.loading = false;
     setBoot(false);
     setStatus('解剖模型就绪 · 可旋转缩放');
     resize();
-    setAction('calf', state.t);
     animate();
     return true;
   } catch (err) {
     console.error(err);
+    state.ready = false;
     state.loading = false;
     state.error = err;
     setStatus('解剖模型加载失败');
@@ -885,7 +909,7 @@ function debugSnapshot() {
   const rig = R().RIGS[state.actionId];
   const pivot = pivots[state.actionId] || null;
   const focus = rig ? actionFocusMeshes(rig) : [];
-  const movable = state.actionId === 'lift' && liftRig ? liftRig.moving : state.actionId === 'curl' && curlRig ? curlRig.moving
+  const movable = state.actionId === 'calf' && calfRig ? calfRig.moving : state.actionId === 'lift' && liftRig ? liftRig.moving : state.actionId === 'curl' && curlRig ? curlRig.moving
     : state.actionId === 'neck' && neckRig ? neckRig.moving
     : rig ? findMeshes(rig.movable || [], rig.singleSide !== false, rig.sideSign) : [];
   const L = state.ready ? getLandmarks() : null;
@@ -907,7 +931,7 @@ function debugSnapshot() {
 
   return {
     ready: state.ready,
-    assembly: liftRig ? liftRig.diagnostics() : curlRig ? curlRig.diagnostics() : neckRig ? neckRig.diagnostics() : null,
+    assembly: calfRig ? calfRig.diagnostics() : liftRig ? liftRig.diagnostics() : curlRig ? curlRig.diagnostics() : neckRig ? neckRig.diagnostics() : null,
     screenPoints: W ? Object.fromEntries(['O','p1','p2'].map(key => {
       const p=W[key].clone().project(camera);
       return [key, { x:(p.x+1)*.5*canvasEl.clientWidth,

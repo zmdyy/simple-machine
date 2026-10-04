@@ -5,7 +5,7 @@
   <meta name="google" content="notranslate" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>简单机械 · 杠杆 — 力臂 · 生活 · 人体 · 平衡 · 视频</title>
-  <link rel="stylesheet" href="css/app.css?v=20261004lift" />
+  <link rel="stylesheet" href="css/app.css?v=20261004grip" />
 </head>
 <body>
   <div id="app">
@@ -158,9 +158,13 @@
               <button type="button" class="btn active-toggle" data-lift-style="stoop">直腿弯腰</button>
               <button type="button" class="btn" data-lift-style="squat">屈膝蹲举</button>
             </div>
-            <label class="body-lift-distance" for="bodyLiftDistance">重物距腰部 <output id="bodyLiftDistanceOut">35 cm</output>
+            <label class="body-lift-distance" for="bodyLiftDistance">箱子起始距腰部 <output id="bodyLiftDistanceOut">35 cm</output>
               <input id="bodyLiftDistance" type="range" min="0.20" max="0.40" step="0.01" value="0.35" />
             </label>
+            <label>观察部位 <select id="bodyLiftFocus" aria-label="搬举受力观察部位">
+              <option value="lumbar">腰部：腰背肌</option><option value="knee">膝部：股四头肌</option><option value="hip">髋部：臀大肌</option>
+            </select></label>
+            <span id="bodyLiftDistanceNow">当前重物力臂 35.0 cm</span>
             <label><input id="bodyLiftBody" type="checkbox" checked /> 计入上身自重</label>
           </div>
           <div class="body3d-stage" id="body3dStage">
@@ -192,18 +196,22 @@
             <div class="task-card-known" id="bodyTemplateNote"></div>
           </div>
           <div id="bodyLiftReadout" class="body-lift-readout" hidden>
-            <strong>同一重物 · 同一提起进度 · 同一距离</strong>
-            <table aria-label="两种姿态的腰部平衡对照">
+            <strong id="bodyLiftReadoutTitle">同一重物 · 同一提起进度 · 同一靠近路径</strong>
+            <table id="bodyLiftCompare" aria-label="两种姿态的腰部平衡对照">
               <thead><tr><th>姿态</th><th>重物力矩<br>N·m</th><th>上身力矩<br>N·m</th><th>肌肉合力<br>N</th></tr></thead>
               <tbody id="bodyLiftCompareRows"></tbody>
             </table>
+            <p id="bodyLiftJointInfo" hidden></p>
             <p id="bodyLiftFormula"></p>
             <p id="bodyLiftResult"></p>
-            <p class="hint">距离按重力作用线到 O 的水平距离计。先关闭上身自重：同重、同距离时，两种姿态的重物力矩相同。</p>
+            <p class="hint">腰部观察中：箱子起身时逐渐靠近身体，重物力臂从起始值缩短至 18 cm，按腰部 O 到重力作用线的垂直距离实时计算。关闭上身自重可单独观察重物的作用。</p>
             <details><summary>模型依据与简化</summary>
-              <p>躯干与骨盆简化为整体，绕髋部前倾；两种姿态均以腰骶部截面作为等效支点，髂肋肌与最长肌合并为伸肌合力，动力臂取 5 cm；重物 100 N、上身 300 N 均为课堂设定。</p>
+              <p>躯干与骨盆简化为整体，绕髋部前倾；两种姿态均以腰骶部截面作为等效支点，髂肋肌与最长肌合并为伸肌合力，肌肉等效动力臂固定取 5 cm（不模拟肌纤维走向变化）；重物 100 N、上身 300 N 均为课堂设定。</p>
+              <p>臀大肌主要参与伸髋；股四头肌经髌骨、髌腱作用于胫骨，参与伸膝。髋部按单侧分担一半上身与重物载荷；膝部独立取向上支持力 350 N，忽略小腿和足的自重，只研究局部力矩。这些局部假设不能合并为完整人体受力计算。</p>
               <p>蹲举仍需要腰背肌维持躯干姿态。模型只解释慢速动作的转动平衡，不代表椎间盘压力或受伤概率。</p>
               <a href="https://www.frontiersin.org/journals/bioengineering-and-biotechnology/articles/10.3389/fbioe.2021.769117/full" target="_blank" rel="noopener noreferrer">搬举姿态与腰椎载荷研究（2021）</a>
+              <a href="https://pubmed.ncbi.nlm.nih.gov/25895990/" target="_blank" rel="noopener noreferrer">蹲举中的股四头肌与髋伸肌研究</a>
+              <a href="https://pubmed.ncbi.nlm.nih.gov/17161841/" target="_blank" rel="noopener noreferrer">髌腱动力臂的动态测量</a>
               <a href="https://www.cdc.gov/niosh/ergonomics/about/rnle.html" target="_blank" rel="noopener noreferrer">NIOSH：距离等搬举因素</a>
             </details>
           </div>
@@ -415,10 +423,10 @@
   <script src="js/steelyard-case.js?v=20260929e"></script>
   <script src="js/steelyard-experiment.js?v=20260929i"></script>
   <script src="js/life-lab.js?v=20260929i"></script>
-  <script src="js/anatomy-rigs.js?v=20261004lift"></script>
-  <script type="module" src="js/body-3d.js?v=20261004lift"></script>
+  <script src="js/anatomy-rigs.js?v=20261004grip"></script>
+  <script type="module" src="js/body-3d.js?v=20261004grip"></script>
   <script src="js/body-scenes.js?v=20260926f"></script>
-  <script src="js/body-lab.js?v=20261004lift"></script>
+  <script src="js/body-lab.js?v=20261004grip"></script>
   <script src="js/balance-lab.js?v=20260320m"></script>
   <script src="js/video-lab.js?v=20260320m"></script>
   <script src="js/dynamic-life-lab.js?v=20260923a"></script>

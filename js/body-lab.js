@@ -102,7 +102,7 @@
       abstractSummary: '同一重物、同一动力臂：比较重物距离与上身倾斜产生的转动作用。',
       action: '对比：同一重物，直腿弯腰与屈膝蹲举',
       whyO: '腰骶部附近简化为支点 O。重物与上身重力产生前倾作用，腰背伸肌提供相反的转动作用。',
-      anatomy: '骨盆、脊柱和双侧肢段联动；红色显示主要腰背伸肌。',
+      anatomy: '红色显示腰背肌、臀大肌与股四头肌；切换观察腰、髋、膝的作用。',
       paramLabel: '提起进度',
       filmTip: '观察同一进度与重物距离下的两种姿态；课堂使用模型，不要求学生负重模仿。',
       fallback() {
@@ -121,7 +121,7 @@
     abstract: false,
     playing: false,
     bound3d: false,
-    liftStyle: 'stoop', liftDistance: .35, liftBody: true,
+    liftStyle: 'stoop', liftFocus:'lumbar', liftDistance: .35, liftBody: true,
   };
 
   let motionRaf = 0;
@@ -143,7 +143,7 @@
   function sync3d() {
     const B = global.Body3D;
     if (!B || !B.isReady()) return;
-    if (ex().id === 'lift') B.setLiftOptions({style:state.liftStyle,distance:state.liftDistance,includeBody:state.liftBody});
+    if (ex().id === 'lift') B.setLiftOptions({style:state.liftStyle,focus:state.liftFocus,distance:state.liftDistance,includeBody:state.liftBody});
     B.setAction(ex().id, state.t);
     B.setStepReveal(state.step, false);
   }
@@ -184,6 +184,16 @@
   function stepHint(e, step, g) {
     const ratio = g.a1.armLen > 1e-6 ? g.a2.armLen / g.a1.armLen : Infinity;
 
+    if (e.id === 'lift' && state.liftFocus!=='lumbar') {
+      const knee=state.liftFocus==='knee';
+      return [null,'观察红色肌肉：'+(knee?'大腿前方的股四头肌经髌骨和髌腱牵拉胫骨。':'臀大肌位于髋部后方，起身时参与伸髋。'),
+        '支点 O 位于'+(knee?'膝关节':'髋关节')+'。此处与腰部分析使用不同的受力对象。',
+        '红箭头表示'+(knee?'髌腱作用于胫骨的拉力':'臀大肌对骨盆的等效拉力')+'。',
+        knee?'蓝箭头为地面的向上支持力，局部示意取 350 N。':'单侧分担一半重物和所选上身自重。',
+        '力臂为支点到作用线的垂直距离，随姿态重新计算。',
+        '播放起身动作，观察动力臂、外力臂和肌肉拉力的同步变化。',
+        '这是单关节的准静态力矩示意，省略关节反力及其他肌肉共同作用。'][step];
+    }
     if (e.id === 'lift') {
       return [null,
         '先看姿态：髋、膝与躯干共同改变位置；腰部的等效支点仍是同一解剖区域。',
@@ -250,7 +260,15 @@
   function updateTemplateCard() {
     const e = ex();
     const rig = rigInfo();
-    const t = rig && rig.teaching;
+    let t = rig && rig.teaching;
+    if(e.id==='lift'&&state.liftFocus!=='lumbar'){
+      const knee=state.liftFocus==='knee';
+      t={joint:knee?'膝关节':'髋关节',bones:knee?'股骨、髌骨、胫骨':'骨盆、股骨',
+        muscles:knee?'股四头肌（股直肌、股内侧肌、股外侧肌、股中间肌）':'臀大肌',
+        effort:knee?'股四头肌经髌腱牵拉胫骨，形成伸膝力矩':'臀大肌在髋后方牵拉骨盆，形成伸髋力矩',
+        load:knee?'支持力向上，取 350 N 作单侧局部示意':'单侧分担重物 50 N 和所选上身自重的一半',
+        note:'力与力臂随姿态更新；肌肉路径和载荷取教学设定，不是个体肌力测量。省略其他肌肉、下肢自重及动态惯性。'};
+    }
     const title = document.getElementById('bodyTemplateTitle');
     const anatomy = document.getElementById('bodyTemplateAnatomy');
     const lever = document.getElementById('bodyTemplateLever');
@@ -362,10 +380,18 @@
     document.getElementById('bodyLiftBody').checked = state.liftBody;
     if (!g.lift) return;
     const q = g.lift;
+    document.getElementById('bodyLiftFocus').value=state.liftFocus;
+    const local=q.focus!=='lumbar';
+    document.getElementById('bodyLiftCompare').hidden=local;
+    document.getElementById('bodyLiftJointInfo').hidden=!local;
+    document.getElementById('bodyLiftReadoutTitle').textContent=local?q.effortLabel+' · 单侧局部杠杆':'同一重物 · 同一进度 · 同一靠近路径';
+    document.getElementById('bodyLiftJointInfo').textContent=local?'动力臂 '+(g.a1.armLen*100).toFixed(1)+' cm；外力臂 '+(g.a2.armLen*100).toFixed(1)+' cm。'+(q.focus==='knee'?'支持力固定取 350 N；观察肌肉拉力随起身变化。':'单侧分担重物 50 N，以及所选上身自重的一半。'):'';
+    document.getElementById('bodyLiftDistanceNow').textContent = (local?'当前箱子距腰部 ':'当前重物力臂 ')+(q.distance*100).toFixed(1)+' cm';
     document.getElementById('bodyLiftFormula').textContent = state.liftBody
-      ? 'F₁ × 0.05 ≈ 100 × '+q.distance.toFixed(2)+' + 300 × '+q.bodyArm.toFixed(3)
-      : 'F₁ × 0.05 = 100 × '+q.distance.toFixed(2);
-    document.getElementById('bodyLiftResult').textContent = '前倾力矩 '+q.totalMoment.toFixed(1)+' N·m → 肌肉合力约 '+Math.round(q.muscleForce)+' N';
+      ? 'F₁ × 0.05 ≈ 100 × '+q.distance.toFixed(3)+' + 300 × '+q.bodyArm.toFixed(3)
+      : 'F₁ × 0.05 = 100 × '+q.distance.toFixed(3);
+    if(local) document.getElementById('bodyLiftFormula').textContent='F₁ × '+g.a1.armLen.toFixed(3)+' ≈ '+q.totalMoment.toFixed(1)+' N·m';
+    document.getElementById('bodyLiftResult').textContent = (local?'平衡外力矩 ':'前倾力矩 ')+q.totalMoment.toFixed(1)+' N·m → 肌肉合力约 '+Math.round(q.muscleForce)+' N';
     document.getElementById('bodyLiftCompareRows').innerHTML = q.comparison.map(p=>'<tr'+(p.style===state.liftStyle?' class="current"':'')+'><th scope="row">'+(p.style==='stoop'?'弯腰':'蹲举')+'</th><td>'+p.loadMoment.toFixed(1)+'</td><td>'+p.bodyMoment.toFixed(1)+'</td><td>'+Math.round(p.muscleForce)+'</td></tr>').join('');
   }
 
@@ -375,26 +401,26 @@
       S.el('rect',{x:12,y:8,width:776,height:404,rx:14,fill:'rgba(255,255,255,.92)'},layer);
       if (g.bodyWeight) S.el('line',{x1:g.O.x,y1:g.O.y,x2:g.bodyCOM.x,y2:g.bodyCOM.y,stroke:'#94a3b8','stroke-width':3,'stroke-dasharray':'5 4'},layer);
       S.el('polyline',{points:[g.p1,g.O,g.p2].map(p=>p.x+','+p.y).join(' '),fill:'none',stroke:'#475569','stroke-width':7},layer);
-      outlinedLabel(layer,28,34,'同一腰部杠杆 · '+(state.liftStyle==='stoop'?'弯腰':'蹲举'),'#0f766e','start',17);
+      outlinedLabel(layer,28,34,g.lift.pivotLabel+' · '+(state.liftStyle==='stoop'?'弯腰':'蹲举'),'#0f766e','start',17);
     }
     const sign=g.p2.x>=g.O.x?1:-1;
     if (step>=2) {
       S.drawPivot(layer,g.O,' ');
-      outlinedLabel(layer,g.O.x-sign*20,g.O.y+28,'腰骶部 O','#17212b',sign>0?'end':'start',14);
+      outlinedLabel(layer,g.O.x-sign*20,g.O.y+(g.lift.focus==='lumbar'?28:43),g.lift.pivotLabel,'#17212b',sign>0?'end':'start',14);
     }
     if (step>=3) {
-      S.drawForceArrow(layer,g.p1,g.d1,75,C.F1,'',{O:g.O});
+      S.drawForceArrow(layer,g.p1,g.d1,Math.min(95,35+Math.sqrt(g.f1/100)*12),C.F1,'',{O:g.O});
       S.el('circle',{cx:g.p1.x,cy:g.p1.y,r:4,fill:C.F1},layer);
-      outlinedLabel(layer,g.p1.x-sign*24,g.p1.y-28,'腰背肌 F₁',C.F1,sign>0?'end':'start',14);
+      outlinedLabel(layer,g.p1.x-sign*24,g.p1.y-(g.lift.focus==='lumbar'?28:65),g.lift.effortLabel+' F₁≈'+Math.round(g.f1)+' N',C.F1,sign>0?'end':'start',14);
     }
     if (step>=4) {
       S.drawForceArrow(layer,g.p2,g.d2,65,C.F2,'',{O:g.O});
       S.el('circle',{cx:g.p2.x,cy:g.p2.y,r:4,fill:C.F2},layer);
-      outlinedLabel(layer,g.p2.x+sign*15,g.p2.y+72,'重物 100 N',C.F2,sign>0?'start':'end',14);
+      outlinedLabel(layer,g.p2.x+sign*15,g.p2.y+(g.d2.y>0?72:-20),g.lift.loadLabel,C.F2,sign>0?'start':'end',14);
       if(g.bodyWeight) {
         S.drawForceArrow(layer,g.bodyCOM,g.d2,58,'#b45309','',{O:g.O});
         S.el('circle',{cx:g.bodyCOM.x,cy:g.bodyCOM.y,r:4,fill:'#b45309'},layer);
-        outlinedLabel(layer,g.bodyCOM.x+sign*22,g.bodyCOM.y-12,'上身 300 N','#b45309',sign>0?'start':'end',13);
+        outlinedLabel(layer,g.bodyCOM.x+sign*22,g.bodyCOM.y-12,'上身 '+g.bodyWeight+' N','#b45309',sign>0?'start':'end',13);
       }
     }
     if (step>=5) {
@@ -403,8 +429,8 @@
       S.drawArm(layer,g.O,g.a1.foot,'',false,C.arm1,g.d1);
       S.drawArm(layer,g.O,g.a2.foot,'',false,C.arm2,g.d2);
       const mid=K.add(g.O,K.scale(K.sub(g.a2.foot,g.O),.5));
-      outlinedLabel(layer,mid.x,mid.y-15,'重物力臂 '+Math.round(g.lift.distance*100)+' cm',C.arm2,'middle',13);
-      outlinedLabel(layer,g.a1.foot.x-sign*16,g.a1.foot.y-8,'5 cm',C.arm1,sign>0?'end':'start',12);
+      outlinedLabel(layer,mid.x,mid.y-30,(g.lift.focus==='lumbar'?'重物力臂 ':'外力臂 ')+(g.a2.armLen*100).toFixed(1)+' cm',C.arm2,'middle',13);
+      outlinedLabel(layer,g.a1.foot.x-sign*16,g.a1.foot.y+(g.lift.focus==='lumbar'?-8:16),(g.lift.focus==='lumbar'?'等效 5 cm（固定）':(g.a1.armLen*100).toFixed(1)+' cm'),C.arm1,sign>0?'end':'start',12);
     }
   }
 
@@ -442,7 +468,7 @@
     const film = document.getElementById('bodyFilmTip');
     const badge = document.getElementById('bodyStepBadge');
     if (action) action.textContent = e.action;
-    if (why) why.textContent = e.whyO;
+    if (why) why.textContent = e.id==='lift'&&state.liftFocus!=='lumbar' ? (state.liftFocus==='knee'?'股四头肌位于大腿前方，经过髌骨与髌腱牵拉胫骨，使膝关节伸展。':'臀大肌位于髋部后方，连接骨盆和股骨，参与起身时的伸髋。') : e.whyO;
     if (film) film.textContent = e.filmTip || '';
     if (badge) badge.textContent = '步骤 ' + step + ' / ' + STEPS;
 
@@ -761,8 +787,9 @@
     };
     if (openVid) openVid.onclick = openVideoPreset;
     document.querySelectorAll('[data-lift-style]').forEach(button => button.onclick = () => {
-      stopMotion(); state.liftStyle = button.dataset.liftStyle; render();
+      stopMotion(); state.liftStyle = button.dataset.liftStyle;state.liftFocus=state.liftStyle==='squat'?'knee':'lumbar';render();
     });
+    document.getElementById('bodyLiftFocus').onchange=ev=>{state.liftFocus=ev.target.value;render();};
     document.getElementById('bodyLiftDistance').oninput = ev => {state.liftDistance=+ev.target.value;render();};
     document.getElementById('bodyLiftBody').onchange = ev => {state.liftBody=ev.target.checked;render();};
   }

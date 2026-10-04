@@ -805,3 +805,6 @@ header.app-header { height: auto; min-height: var(--header-h); padding-top: 6px;
   #labBody.lift-active > .stage { flex:0 0 auto; }
   #labBody.lift-active .body3d-stage { flex:0 0 420px; min-height:420px; }
 }
+
+.body-lift-readout [hidden] { display:none !important; }
+.body-lift-controls select { padding:5px; border:1px solid #cbd5e1; border-radius:6px; background:white; }

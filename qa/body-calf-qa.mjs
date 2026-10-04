@@ -56,6 +56,8 @@ try {
     const s = await snap(name);
     poses.push({ name, t, s });
 
+    assert(s.assembly?.calibrated && s.assembly.surfaceAttachmentError<1e-6 && s.assembly.originDrift<1e-6, 'calf attachments disconnected');
+    assert(s.assembly.muscleNames.length===3, 'calf muscle selection');
     assert(s.ready, name + ': Body3D not ready');
     assert(s.actionId === 'calf', name + ': actionId is not calf');
     assert(s.focusCount > 0, name + ': no focused meshes');
