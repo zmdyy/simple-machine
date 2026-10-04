@@ -97,33 +97,18 @@
       id: 'lift',
       presetId: 'lift',
       name: '弯腰 vs 蹲举',
+      sample: true,
+      leverType: '腰部等效杠杆（费力）',
+      abstractSummary: '同一重物、同一动力臂：比较重物距离与上身倾斜产生的转动作用。',
       action: '对比：同一重物，直腿弯腰与屈膝蹲举',
-      whyO: '本案例后续将统一采用腰骶部简化枢轴，比较同一重物在两种姿态下的阻力臂。',
-      anatomy: '局部聚焦：骨盆、腰椎、股骨与主要腰背伸肌；这是初中力学简化模型。',
-      paramLabel: '姿态：弯腰 ↔ 蹲举',
-      filmTip: '同一重物侧拍两种搬法；慢动作，腰与膝都要入画。',
-      fallback(t) {
-        const O = K.v(400, 318);
-        if (t < 0.5) {
-          const lean = t * 2;
-          const shoulder = K.v(400 + lean * 140, 318 - lean * 100);
-          const com = K.v(shoulder.x + 30, shoulder.y + 50);
-          return {
-            O, bar: [O, shoulder],
-            p1: K.v(O.x - 8, O.y - 45 - lean * 20), d1: K.norm(K.v(0.08, -1)),
-            p2: com, d2: K.v(0, 1), f2: 400,
-            stageName: '直腿弯腰（后续重构为腰骶模型）',
-          };
-        }
-        const squat = (t - 0.5) * 2;
-        const shoulder = K.v(400, 318 - squat * 55);
-        const com = K.v(410, shoulder.y + 45);
-        return {
-          O, bar: [O, shoulder],
-          p1: K.v(O.x - 6, O.y - 35), d1: K.norm(K.v(0.1, -1)),
-          p2: com, d2: K.v(0, 1), f2: 400,
-          stageName: '屈膝蹲举（后续与弯腰做同物对照）',
-        };
+      whyO: '腰骶部附近简化为支点 O。重物与上身重力产生前倾作用，腰背伸肌提供相反的转动作用。',
+      anatomy: '骨盆、脊柱和双侧肢段联动；红色显示主要腰背伸肌。',
+      paramLabel: '提起进度',
+      filmTip: '观察同一进度与重物距离下的两种姿态；课堂使用模型，不要求学生负重模仿。',
+      fallback() {
+        // Loading-only placeholder. Never show the former mixed-posture model.
+        return {O:K.v(400,220),p1:K.v(380,180),p2:K.v(490,240),
+          d1:K.v(0,1),d2:K.v(0,1),f2:100,bar:[]};
       },
     },
   ];
@@ -136,6 +121,7 @@
     abstract: false,
     playing: false,
     bound3d: false,
+    liftStyle: 'stoop', liftDistance: .35, liftBody: true,
   };
 
   let motionRaf = 0;
@@ -157,6 +143,7 @@
   function sync3d() {
     const B = global.Body3D;
     if (!B || !B.isReady()) return;
+    if (ex().id === 'lift') B.setLiftOptions({style:state.liftStyle,distance:state.liftDistance,includeBody:state.liftBody});
     B.setAction(ex().id, state.t);
     B.setStepReveal(state.step, false);
   }
@@ -170,7 +157,7 @@
     if (!g.a1) g.a1 = K.forceArm(g.O, g.p1, g.d1);
     if (!g.a2) g.a2 = K.forceArm(g.O, g.p2, g.d2);
 
-    g.f1 = g.f2 * (g.a2.armLen / Math.max(g.a1.armLen, 1e-6));
+    g.f1 = (g.totalMoment ?? (g.f2 * g.a2.armLen)) / Math.max(g.a1.armLen, 1e-6);
     g.cls = K.classifyLever(g.a1.armLen, g.a2.armLen);
     return g;
   }
@@ -197,6 +184,16 @@
   function stepHint(e, step, g) {
     const ratio = g.a1.armLen > 1e-6 ? g.a2.armLen / g.a1.armLen : Infinity;
 
+    if (e.id === 'lift') {
+      return [null,
+        '先看姿态：髋、膝与躯干共同改变位置；腰部的等效支点仍是同一解剖区域。',
+        'O 是腰骶部附近的等效支点；不是膝关节，也不是髋关节。',
+        'F₁ 表示腰背伸肌的合力，动力臂按 5 cm 简化。',
+        '重物重力为 100 N。计入上身自重时，另一个向下的力也产生前倾作用。',
+        '只改重物距离：保持重力不变，距离越大，前倾力矩越大。',
+        '在同一提起进度切换两种姿态，再比较相同重物距离。蹲举本身不保证腰部受力更小。',
+        '两种姿态共用 O 与同一套平衡关系；简化杠杆中的点位与人体模型对应。'][step];
+    }
     if (e.id === 'curl') {
       const hints = {
         1: '先观察局部解剖：前臂会绕肘关节运动，肱二头肌被重点高亮。',
@@ -350,6 +347,67 @@
     }, layer).textContent = ex().abstractSummary || 'O、F₁、F₂ 与两条力臂保持和真实结构中的位置对应。';
   }
 
+  function renderLiftControls(g) {
+    const active = ex().id === 'lift';
+    document.getElementById('labBody').classList.toggle('lift-active', active);
+    document.getElementById('bodyLiftControls').hidden = !active;
+    document.getElementById('bodyLiftReadout').hidden = !active;
+    if (!active) return;
+    document.querySelectorAll('[data-lift-style]').forEach(b => {
+      const on = b.dataset.liftStyle === state.liftStyle;
+      b.classList.toggle('active-toggle', on); b.setAttribute('aria-pressed', String(on));
+    });
+    document.getElementById('bodyLiftDistance').value = state.liftDistance;
+    document.getElementById('bodyLiftDistanceOut').textContent = Math.round(state.liftDistance*100)+' cm';
+    document.getElementById('bodyLiftBody').checked = state.liftBody;
+    if (!g.lift) return;
+    const q = g.lift;
+    document.getElementById('bodyLiftFormula').textContent = state.liftBody
+      ? 'F₁ × 0.05 ≈ 100 × '+q.distance.toFixed(2)+' + 300 × '+q.bodyArm.toFixed(3)
+      : 'F₁ × 0.05 = 100 × '+q.distance.toFixed(2);
+    document.getElementById('bodyLiftResult').textContent = '前倾力矩 '+q.totalMoment.toFixed(1)+' N·m → 肌肉合力约 '+Math.round(q.muscleForce)+' N';
+    document.getElementById('bodyLiftCompareRows').innerHTML = q.comparison.map(p=>'<tr'+(p.style===state.liftStyle?' class="current"':'')+'><th scope="row">'+(p.style==='stoop'?'弯腰':'蹲举')+'</th><td>'+p.loadMoment.toFixed(1)+'</td><td>'+p.bodyMoment.toFixed(1)+'</td><td>'+Math.round(p.muscleForce)+'</td></tr>').join('');
+  }
+
+  function drawLiftOverlay(layer, g, step, abstract) {
+    if (!g.lift) return;
+    if (abstract) {
+      S.el('rect',{x:12,y:8,width:776,height:404,rx:14,fill:'rgba(255,255,255,.92)'},layer);
+      if (g.bodyWeight) S.el('line',{x1:g.O.x,y1:g.O.y,x2:g.bodyCOM.x,y2:g.bodyCOM.y,stroke:'#94a3b8','stroke-width':3,'stroke-dasharray':'5 4'},layer);
+      S.el('polyline',{points:[g.p1,g.O,g.p2].map(p=>p.x+','+p.y).join(' '),fill:'none',stroke:'#475569','stroke-width':7},layer);
+      outlinedLabel(layer,28,34,'同一腰部杠杆 · '+(state.liftStyle==='stoop'?'弯腰':'蹲举'),'#0f766e','start',17);
+    }
+    const sign=g.p2.x>=g.O.x?1:-1;
+    if (step>=2) {
+      S.drawPivot(layer,g.O,' ');
+      outlinedLabel(layer,g.O.x-sign*20,g.O.y+28,'腰骶部 O','#17212b',sign>0?'end':'start',14);
+    }
+    if (step>=3) {
+      S.drawForceArrow(layer,g.p1,g.d1,75,C.F1,'',{O:g.O});
+      S.el('circle',{cx:g.p1.x,cy:g.p1.y,r:4,fill:C.F1},layer);
+      outlinedLabel(layer,g.p1.x-sign*24,g.p1.y-28,'腰背肌 F₁',C.F1,sign>0?'end':'start',14);
+    }
+    if (step>=4) {
+      S.drawForceArrow(layer,g.p2,g.d2,65,C.F2,'',{O:g.O});
+      S.el('circle',{cx:g.p2.x,cy:g.p2.y,r:4,fill:C.F2},layer);
+      outlinedLabel(layer,g.p2.x+sign*15,g.p2.y+72,'重物 100 N',C.F2,sign>0?'start':'end',14);
+      if(g.bodyWeight) {
+        S.drawForceArrow(layer,g.bodyCOM,g.d2,58,'#b45309','',{O:g.O});
+        S.el('circle',{cx:g.bodyCOM.x,cy:g.bodyCOM.y,r:4,fill:'#b45309'},layer);
+        outlinedLabel(layer,g.bodyCOM.x+sign*22,g.bodyCOM.y-12,'上身 300 N','#b45309',sign>0?'start':'end',13);
+      }
+    }
+    if (step>=5) {
+      S.drawForceLine(layer,g.p1,g.d1,100);
+      S.drawForceLine(layer,g.p2,g.d2,135);
+      S.drawArm(layer,g.O,g.a1.foot,'',false,C.arm1,g.d1);
+      S.drawArm(layer,g.O,g.a2.foot,'',false,C.arm2,g.d2);
+      const mid=K.add(g.O,K.scale(K.sub(g.a2.foot,g.O),.5));
+      outlinedLabel(layer,mid.x,mid.y-15,'重物力臂 '+Math.round(g.lift.distance*100)+' cm',C.arm2,'middle',13);
+      outlinedLabel(layer,g.a1.foot.x-sign*16,g.a1.foot.y-8,'5 cm',C.arm1,sign>0?'end':'start',12);
+    }
+  }
+
   function render() {
     const root = svg();
     if (!root) return;
@@ -372,7 +430,12 @@
     if (canvas) canvas.style.visibility = ready3d ? 'visible' : 'hidden';
     if (ready3d) sync3d();
 
+    if (e.id === 'lift' && !ready3d) {
+      document.getElementById('body3dStatus').textContent = '正在加载搬举解剖模型…';
+      return;
+    }
     const g = geom();
+    renderLiftControls(g);
 
     const action = document.getElementById('bodyAction');
     const why = document.getElementById('bodyWhy');
@@ -489,9 +552,13 @@
       }
     }
 
+    if (e.id === 'lift') { S.clear(Ldraw); drawLiftOverlay(Ldraw, g, step, false); }
     if (abstractNow) {
+      if (e.id === 'lift') { S.clear(Ldraw); drawLiftOverlay(Lui, g, 7, true); }
+      else {
       if (e.id==='neck') S.clear(Ldraw);
       drawAbstractModel(Lui, g);
+      }
     }
 
     // 右侧把原“力矩条”改为两条力臂的直观比较。
@@ -513,6 +580,7 @@
         '｜l₂/l₁ ≈ ' + (isFinite(ratio) ? ratio.toFixed(2) : '∞') +
         '｜F₁ ≈ ' + (isFinite(g.f1) ? g.f1.toFixed(0) + ' N' : '很大') + '（示意）';
       if (g.stageName) txt += '｜' + g.stageName;
+      if (e.id === 'lift' && g.lift) txt = g.stageName+'｜躯干前倾 '+Math.round(g.lift.trunkDegrees)+'°｜屈膝 '+Math.round(g.lift.kneeDegrees)+'°';
       if (e.id==='neck') txt='第一类杠杆｜'+g.cls.type+'杠杆｜平衡所需 F₁≈'+g.f1.toFixed(0)+' N（示意）';
       cls.textContent = txt;
     }
@@ -528,7 +596,7 @@
       const a=g.angleDegrees;
       po.textContent = e.id==='neck'
         ? (Number.isFinite(a) ? (Math.abs(a)<.05 ? '平视' : (a>0 ? '低头 ' : '抬头 ')+Math.abs(a).toFixed(1)+'°') : '低头 → 抬头')
-        : state.t.toFixed(2);
+        : e.id==='lift' ? Math.round(state.t*100)+'%' : state.t.toFixed(2);
     }
 
     const absBtn = document.getElementById('bodyAbstract');
@@ -651,7 +719,7 @@
         state.step = 1;
         state.abstract = false;
         state.tPrev = null;
-        state.t = ex().id === 'curl' ? 0.35 : 0.45;
+        state.t = ex().id === 'curl' ? 0.35 : ex().id === 'lift' ? 0 : 0.45;
         renderList();
         if (global.Body3D && Body3D.isReady()) Body3D.setAction(ex().id, state.t);
         render();
@@ -692,6 +760,11 @@
       render();
     };
     if (openVid) openVid.onclick = openVideoPreset;
+    document.querySelectorAll('[data-lift-style]').forEach(button => button.onclick = () => {
+      stopMotion(); state.liftStyle = button.dataset.liftStyle; render();
+    });
+    document.getElementById('bodyLiftDistance').oninput = ev => {state.liftDistance=+ev.target.value;render();};
+    document.getElementById('bodyLiftBody').onchange = ev => {state.liftBody=ev.target.checked;render();};
   }
 
   function init() {

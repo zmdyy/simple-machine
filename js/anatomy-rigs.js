@@ -147,41 +147,20 @@
     },
 
     lift: {
-      id: 'lift',
-      label: '弯腰 vs 蹲抬',
-      camera: { position: [1.6, 0.1, 0.2], target: [0, -0.05, 0], fov: 40 },
-      focusPatterns: [
-        /hip bone/i, /ilium/i, /sacrum/i, /lumbar/i, /femur/i,
-        /erector/i, /iliocostalis/i, /longissimus/i, /multifidus/i, /vertebra l/i,
-      ],
-      pivotFrom: [/hip bone(?!\.)/i, /ilium(?!\.)/i, /head of femur/i],
-      movable: [
-        /vertebra l/i, /vertebra t/i, /lumbar/i, /thoracic vertebrae/i,
-        /rib/i, /sternum/i, /sacrum/i, /erector/i, /iliocostalis/i, /longissimus/i,
-        /latissimus/i, /scapula/i, /humerus/i, /cranium/i, /cervical/i,
-      ],
-      kneeMovable: [/tibia/i, /fibula/i, /patella/i, /bones of foot/i, /calcane/i, /talus/i, /metatars/i],
-      highlightMuscle: [/erector/i, /iliocostalis/i, /longissimus/i, /multifidus/i],
-      axis: 'x',
-      // t<0.5 弯腰；t>=0.5 蹲抬
-      angleMin: 0,
-      angleMax: 0.9,
-      landmarks(ctx) {
-        const O = ctx.pivotWorld.clone();
-        const shoulder = ctx.centerOf([/scapula(?!\.)/i, /vertebra t1/i, /sternum/i]) || O.clone().add(ctx.v(0, 0.35, 0.05));
-        const com = shoulder.clone().add(ctx.v(0.05, -0.05, 0.08));
-        const belly = ctx.centerOf([/erector/i, /iliocostalis lumborum/i]) || O.clone().add(ctx.v(-0.03, 0.12, -0.05));
-        return {
-          O,
-          p1: belly,
-          d1: ctx.dir(belly, O.clone().add(ctx.v(0, 0.2, -0.02))),
-          p2: com,
-          d2: ctx.v(0, -1, 0),
-          f2: 400,
-          bar: [O, shoulder],
-          stageName: ctx.t < 0.5 ? '直腿弯腰（腰力臂大）' : '屈膝蹲抬（躯干更竖）',
-        };
+      id: 'lift', label: '弯腰 vs 蹲举', singleSide: false,
+      hideUnfocused: true, focusOnlyHighlightedMuscle: true, trackFocus: true,
+      camera: { position: [2.6, .30, .35], target: [0, .05, .1], fov: 36, fitPadding: 1.02, minDistance: 1.0 },
+      teaching: {
+        joint: 'L5/S1 附近的腰骶部等效支点',
+        bones: '骨盆、脊柱、胸廓与双侧肢段',
+        muscles: '髂肋肌、最长肌，合并为腰背伸肌拉力',
+        effort: '腰背伸肌提供伸展力矩；等效动力臂取 5 cm',
+        load: '同一 10 kg 重物：重力 100 N；可计入上身自重 300 N',
+        note: '只研究慢速提起时的转动平衡。上身和肌肉参数为教学设定，不计算椎间盘压力，也不据此判断损伤风险。',
       },
+      focusPatterns: [/bone|vertebra|rib|humerus|radius|ulna|femur|tibia|fibula|sacrum|iliocostalis lumborum|longissimus thoracis/i],
+      pivotFrom: [], movable: [],
+      landmarks() { throw new Error('搬举需要已校准的腰部比较模板'); },
     },
   };
 

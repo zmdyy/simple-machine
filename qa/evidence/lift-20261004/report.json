@@ -1,0 +1,84 @@
+{
+  "samples": 42,
+  "maxJointError": 6.004449063730082e-16,
+  "maxHandError": 3.597533769998862e-16,
+  "maxAttachmentError": 6.326089538678209e-08,
+  "maxMomentResidual": 2.1316282072803006e-13,
+  "errors": [],
+  "initial": {
+    "calibrated": true,
+    "style": "stoop",
+    "distance": 0.35,
+    "bodyArm": 0.24665783747431752,
+    "loadMoment": 35,
+    "bodyMoment": 73.99735124229525,
+    "totalMoment": 108.99735124229525,
+    "muscleForce": 2179.9470248459047,
+    "trunkDegrees": 75,
+    "kneeDegrees": 8,
+    "comparison": [
+      {
+        "style": "stoop",
+        "loadMoment": 35,
+        "bodyMoment": 73.99735124229525,
+        "bodyArm": 0.24665783747431752,
+        "muscleForce": 2179.9470248459047
+      },
+      {
+        "style": "squat",
+        "loadMoment": 35,
+        "bodyMoment": 37.13421635277236,
+        "bodyArm": 0.12378072117590788,
+        "muscleForce": 1442.6843270554473
+      }
+    ],
+    "jointError": 3.1401849173675503e-16,
+    "handError": 1.3597399555105182e-16,
+    "maxReachError": 0,
+    "attachmentError": 6.326089538678209e-08,
+    "momentResidual": 5.684341886080802e-14,
+    "muscleNames": [
+      "iliocostalis lumborum muscle",
+      "iliocostalis lumborum muscle",
+      "longissimus thoracis muscle",
+      "longissimus thoracis muscle"
+    ],
+    "movingBones": 215,
+    "visibleMuscles": 4,
+    "footBones": 54,
+    "bodyWeight": 300,
+    "boxWeight": 100,
+    "muscleArm": 0.05
+  },
+  "regressions": {
+    "neck": {
+      "passed": true,
+      "poses": 11
+    },
+    "curl": {
+      "passed": true,
+      "sweepPoses": 21
+    },
+    "controls": {
+      "passed": true,
+      "widths": [
+        1440,
+        1024,
+        900,
+        768
+      ],
+      "actions": [
+        "calf",
+        "curl",
+        "neck",
+        "lift"
+      ],
+      "abstractRoundTrips": 4
+    },
+    "mobileLift": {
+      "passed": true,
+      "width": 390,
+      "stageHeight": 420
+    }
+  }
+}

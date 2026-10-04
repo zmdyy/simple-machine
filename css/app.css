@@ -783,3 +783,25 @@ header.app-header { height: auto; min-height: var(--header-h); padding-top: 6px;
 .experiment-heading .experiment-methods { border-left: 2px solid #cbd5e1; padding-left: 18px; gap: 8px; }
 .experiment-heading .btn { font-size: 16px; padding: 9px 12px; color: #334155; background: #f8fafc; }
 .experiment-heading .btn.active-toggle { color: #fff; background: #0f766e; border-color: #0f766e; }
+
+/* Shared controls for the two lumbar lifting postures. */
+.body-lift-controls { display:flex; flex-wrap:wrap; align-items:center; gap:10px 18px; padding:9px 12px; background:#f0f7f5; border-bottom:1px solid var(--stroke); flex-shrink:0; font-size:13px; }
+.body-lift-controls[hidden], .body-lift-readout[hidden] { display:none; }
+.body-lift-poses { display:flex; gap:6px; }
+.body-lift-distance { display:flex; gap:8px; align-items:center; }
+.body-lift-distance input { width:130px; }
+.body-lift-controls output { min-width:42px; font-weight:700; color:var(--accent); }
+.body-lift-readout { display:flex; flex-direction:column; gap:9px; font-size:13px; padding:10px; background:#f0f7f5; border:1px solid #9ddacb; border-radius:10px; }
+.body-lift-readout table { border-collapse:collapse; width:100%; font-size:12px; text-align:right; }
+.body-lift-readout th, .body-lift-readout td { padding:6px 3px; border-bottom:1px solid #c7d9d4; }
+.body-lift-readout th:first-child { text-align:left; }
+.body-lift-readout tr.current { background:#d8eee6; font-weight:700; }
+.body-lift-readout summary { cursor:pointer; font-weight:700; }
+.body-lift-readout details p, .body-lift-readout details a { display:block; margin-top:8px; line-height:1.6; }
+#bodyLiftFormula { font-family:var(--mono); font-size:12px; }
+#bodyLiftResult { font-weight:700; color:#a32d2d; }
+
+@media (max-width:900px) {
+  #labBody.lift-active > .stage { flex:0 0 auto; }
+  #labBody.lift-active .body3d-stage { flex:0 0 420px; min-height:420px; }
+}

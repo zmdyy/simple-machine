@@ -6,6 +6,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { createCurlRig, isCurlStructure } from './curl-rig.js';
+import { createLiftRig } from './lift-rig.js';
 import { createNeckRig, isNeckStructure } from './neck-rig.js?v=20260930b';
 
 const LOCAL_GLB = 'assets/anatomy/body.glb';
@@ -38,9 +39,10 @@ let scene, camera, renderer, controls, root, modelRoot;
 let meshes = [];
 let pivots = {};
 let followGroups = {};
-let kneePivot = null;
 let curlRig = null;
 let neckRig = null;
+let liftRig = null;
+let liftOptions = {style: 'stoop', distance: .35, includeBody: true};
 let overlayGroup;
 let clock;
 let raf = 0;
@@ -177,6 +179,7 @@ function restoreMeshHome(m) {
 function clearPivots() {
   if (curlRig) { curlRig.dispose(); curlRig = null; }
   if (neckRig) { neckRig.dispose(); neckRig = null; }
+  if (liftRig) { liftRig.dispose(); liftRig = null; }
   meshes.forEach(restoreMeshHome);
 
   Object.keys(pivots).forEach((id) => {
@@ -190,11 +193,6 @@ function clearPivots() {
     if (g && g.parent) g.parent.remove(g);
   });
   followGroups = {};
-
-  if (kneePivot) {
-    if (kneePivot.parent) kneePivot.parent.remove(kneePivot);
-    kneePivot = null;
-  }
 }
 
 function buildPivotFor(actionId) {
@@ -202,6 +200,13 @@ function buildPivotFor(actionId) {
   if (!rig || !modelRoot) return;
 
   clearPivots();
+
+  if (actionId === 'lift') {
+    liftRig = createLiftRig({ root, modelRoot, meshes });
+    liftRig.setOptions(liftOptions);
+    pivots.lift = liftRig.pivot;
+    return;
+  }
 
   if (actionId === 'curl') {
     curlRig = createCurlRig({ root, modelRoot, meshes });
@@ -251,17 +256,6 @@ function buildPivotFor(actionId) {
     follow.userData.anchorPatterns = rig.followAnchor;
     followGroups[actionId] = follow;
   }
-
-  if (actionId === 'lift' && rig.kneeMovable) {
-    const kneeSources = findMeshes([/patella(?!\.)/i, /tibial plateau/i, /lateral condyle of femur/i], true);
-    let kp = centerOfMeshes(kneeSources);
-    if (!kp) kp = pivotPos.clone().add(new THREE.Vector3(0, -0.35, 0.05));
-    kneePivot = new THREE.Object3D();
-    kneePivot.name = 'pivot_knee';
-    kneePivot.position.copy(kp);
-    root.add(kneePivot);
-    findMeshes(rig.kneeMovable, rig.singleSide !== false, rig.sideSign).forEach((m) => kneePivot.attach(m));
-  }
 }
 
 function setPose(actionId, t) {
@@ -273,6 +267,13 @@ function setPose(actionId, t) {
   if (!pivots[actionId]) buildPivotFor(actionId);
   const pivot = pivots[actionId];
   if (!pivot) return;
+
+  if (actionId === 'lift' && liftRig) {
+    liftRig.update(t);
+    applyFocusDim();
+    drawOverlay3D();
+    return;
+  }
 
   if (actionId === 'curl' && curlRig) {
     curlRig.update(t);
@@ -288,31 +289,14 @@ function setPose(actionId, t) {
   }
 
   pivot.rotation.set(0, 0, 0);
-  if (kneePivot) kneePivot.rotation.set(0, 0, 0);
 
   const follow = followGroups[actionId] || null;
   if (follow) follow.position.set(0, 0, 0);
 
-  if (actionId === 'lift') {
-    if (t < 0.5) {
-      const lean = (t / 0.5) * 0.85;
-      if (rig.axis === 'x') pivot.rotation.x = lean;
-      else pivot.rotation.z = lean;
-    } else {
-      const squat = (t - 0.5) / 0.5;
-      if (rig.axis === 'x') pivot.rotation.x = 0.25 * (1 - squat);
-      else pivot.rotation.z = 0.25 * (1 - squat);
-      if (kneePivot) kneePivot.rotation.x = squat * 0.9;
-    }
-  } else {
-    const ang = THREE.MathUtils.lerp(rig.angleMin, rig.angleMax, t);
-    if (rig.axis === 'x') pivot.rotation.x = ang;
-    else if (rig.axis === 'y') pivot.rotation.y = ang;
-    else pivot.rotation.z = ang;
-    // 踮脚：随参数增大让跟骨/踝部向上抬起。
-    if (actionId === 'calf') pivot.rotation.x = ang;
-    if (actionId === 'neck') pivot.rotation.x = ang;
-  }
+  const ang = THREE.MathUtils.lerp(rig.angleMin, rig.angleMax, t);
+  if (rig.axis === 'x') pivot.rotation.x = ang;
+  else if (rig.axis === 'y') pivot.rotation.y = ang;
+  else pivot.rotation.z = ang;
 
   if (follow && follow.userData.baseAnchor && follow.userData.anchorPatterns) {
     const anchorNow = centerOfMeshes(
@@ -341,6 +325,14 @@ function applyFocusDim() {
       (type === 'other' && state.showBone);
     m.visible = !!show;
     if (!show) return;
+
+    if (state.actionId === 'lift' && liftRig) {
+      m.visible = liftRig.selected.includes(m);
+      const mat = m.userData.baseMat || m.material;
+      mat.opacity = 1; mat.transparent = false; mat.depthWrite = true;
+      mat.emissive.set(0x000000); mat.emissiveIntensity = 0;
+      return;
+    }
 
     if (state.actionId === 'curl') {
       m.visible = m.userData.restWorld.x > .05 && isCurlStructure(m);
@@ -414,12 +406,14 @@ function storeRestPose() {
 
 function actionFocusMeshes(rig) {
   if (!rig || !rig.focusPatterns) return [];
+  if (rig.id === 'lift' && liftRig) return liftRig.selected;
   if (rig.id === 'curl') return meshes.filter(m => m.userData.restWorld.x > .05 && isCurlStructure(m));
   if (rig.id === 'neck') return meshes.filter(isNeckStructure);
   return findMeshes(rig.focusPatterns, rig.singleSide !== false, rig.sideSign);
 }
 
 function focusBounds(rig) {
+  if (rig.id === 'lift' && liftRig) return liftRig.focusBounds();
   const list = actionFocusMeshes(rig);
   if (!list.length) return null;
   const box = new THREE.Box3();
@@ -525,7 +519,7 @@ function getLandmarks() {
   const rig = R().RIGS[state.actionId];
   if (!rig || !state.ready) return null;
   const ctx = makeCtx(state.t);
-  const L = state.actionId === 'curl' && curlRig ? curlRig.landmarks()
+  const L = state.actionId === 'lift' && liftRig ? liftRig.landmarks() : state.actionId === 'curl' && curlRig ? curlRig.landmarks()
     : state.actionId === 'neck' && neckRig ? neckRig.landmarks() : rig.landmarks(ctx);
   const loadDir = (L.d2 || new THREE.Vector3(0, -1, 0)).clone().normalize();
 
@@ -557,6 +551,10 @@ function getLandmarks() {
     }),
     stageName: L.stageName,
     angleDegrees: L.angleDegrees,
+    totalMoment: L.totalMoment,
+    lift: L.lift,
+    bodyWeight: L.bodyWeight,
+    bodyCOM: L.bodyCOM ? worldToSvg(L.bodyCOM) : null,
     world: Object.assign({}, L, { a1: a1w, a2: a2w, d2: loadDir }),
   };
 }
@@ -887,7 +885,7 @@ function debugSnapshot() {
   const rig = R().RIGS[state.actionId];
   const pivot = pivots[state.actionId] || null;
   const focus = rig ? actionFocusMeshes(rig) : [];
-  const movable = state.actionId === 'curl' && curlRig ? curlRig.moving
+  const movable = state.actionId === 'lift' && liftRig ? liftRig.moving : state.actionId === 'curl' && curlRig ? curlRig.moving
     : state.actionId === 'neck' && neckRig ? neckRig.moving
     : rig ? findMeshes(rig.movable || [], rig.singleSide !== false, rig.sideSign) : [];
   const L = state.ready ? getLandmarks() : null;
@@ -909,7 +907,7 @@ function debugSnapshot() {
 
   return {
     ready: state.ready,
-    assembly: curlRig ? curlRig.diagnostics() : neckRig ? neckRig.diagnostics() : null,
+    assembly: liftRig ? liftRig.diagnostics() : curlRig ? curlRig.diagnostics() : neckRig ? neckRig.diagnostics() : null,
     screenPoints: W ? Object.fromEntries(['O','p1','p2'].map(key => {
       const p=W[key].clone().project(camera);
       return [key, { x:(p.x+1)*.5*canvasEl.clientWidth,
@@ -950,6 +948,12 @@ const Body3D = {
   setAction,
   setPose,
   setLayers,
+  setLiftOptions(value) {
+    const next = {...liftOptions, ...value};
+    if (JSON.stringify(next) === JSON.stringify(liftOptions)) return;
+    liftOptions = next;
+    if (liftRig) liftRig.setOptions(next);
+  },
   setStepReveal,
   setOverlayFlags,
   getLandmarks,
