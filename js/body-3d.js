@@ -7,7 +7,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { createCurlRig, isCurlStructure } from './curl-rig.js';
 import { createCalfRig } from './calf-rig.js?v=20261004grip';
-import { createLiftRig } from './lift-rig.js?v=20261004grip';
+import { createLiftRig } from './lift-rig.js?v=20261004elbow';
 import { createNeckRig, isNeckStructure } from './neck-rig.js?v=20260930b';
 
 const LOCAL_GLB = 'assets/anatomy/body.glb';

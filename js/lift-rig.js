@@ -69,6 +69,18 @@ export function liftPose(t, options={}) {
     trunkDegrees:degrees.trunk*amount,kneeDegrees:(degrees.shin-degrees.thigh)*amount};
 }
 
+// Preserve the elbow hinge plane as well as the segment direction. A shortest
+// rotation alone leaves bone roll unconstrained when solving a bent arm.
+function hingeRotation(restDirection, direction, hinge) {
+  const frame=(long,bendAxis)=>{
+    const y=long.clone().normalize();
+    const x=bendAxis.clone().addScaledVector(y,-bendAxis.dot(y)).normalize();
+    return new THREE.Matrix4().makeBasis(x,y,x.clone().cross(y));
+  };
+  return new THREE.Quaternion().setFromRotationMatrix(
+    frame(direction,hinge).multiply(frame(restDirection,axis).transpose()));
+}
+
 export function createLiftRig({root,modelRoot,meshes}) {
   modelRoot.updateWorldMatrix(true,true);
   const world=p=>modelRoot.localToWorld(p.clone());
@@ -169,10 +181,12 @@ export function createLiftRig({root,modelRoot,meshes}) {
       maxReachError=Math.max(maxReachError,Math.max(0,distance-l1-l2));
       const length=THREE.MathUtils.clamp(distance,Math.abs(l1-l2)+1e-5,l1+l2-1e-5);
       const along=(l1*l1-l2*l2+length*length)/(2*length);
-      const perpendicular=new THREE.Vector3().crossVectors(direction,axis).normalize();
+      const perpendicular=new THREE.Vector3().crossVectors(axis,direction).normalize(); // elbow behind the shoulder–wrist line
       const elbow=shoulder.clone().addScaledVector(direction,along).addScaledVector(perpendicular,Math.sqrt(Math.max(0,l1*l1-along*along)));
-      const upperQ=new THREE.Quaternion().setFromUnitVectors(a.elbow.clone().sub(a.shoulder).normalize(),elbow.clone().sub(shoulder).normalize());
-      const lowerQ=new THREE.Quaternion().setFromUnitVectors(wrist.clone().sub(a.elbow).normalize(),target.clone().sub(elbow).normalize());
+      const upperDirection=elbow.clone().sub(shoulder),lowerDirection=target.clone().sub(elbow);
+      const hinge=lowerDirection.clone().cross(upperDirection).normalize();
+      const upperQ=hingeRotation(a.elbow.clone().sub(a.shoulder),upperDirection,hinge);
+      const lowerQ=hingeRotation(wrist.clone().sub(a.elbow),lowerDirection,hinge);
       setTransform(a.upper,a.shoulder,shoulder,upperQ);setTransform(a.lower,a.elbow,elbow,lowerQ);
       a.currentShoulder=shoulder;a.currentElbow=elbow;
     }
@@ -232,6 +246,15 @@ export function createLiftRig({root,modelRoot,meshes}) {
     const muscleMoment=L.p1.clone().sub(L.O).cross(L.d1.clone().multiplyScalar(L.lift.muscleForce)).x;
     return {calibrated:true,knee: {muscleArm:pose.kneeJoint.muscleArm,oppositeMoments:pose.kneeJoint.oppositeMoments},hip:{muscleArm:pose.hipJoint.muscleArm,oppositeMoments:pose.hipJoint.oppositeMoments},style:pose.style,...landmarks().lift,jointError,handError,fingerJointError,maxReachError,attachmentError,
       hands:arms.map(a=>a.grasp.diagnostics()),
+      elbows:arms.map(a=>{
+        const S=sourcePosition(a.upper,a.shoulder),E=sourcePosition(a.upper,a.elbow),W=sourcePosition(a.lower,a.grasp.wrist);
+        const line=W.clone().sub(S).normalize(),offset=E.clone().sub(S);
+        offset.addScaledVector(line,-offset.dot(line));
+        const upper=E.clone().sub(S).normalize(),forearm=W.clone().sub(E).normalize();
+        return {side:a.side,shoulder:S.toArray(),elbow:E.toArray(),wrist:W.toArray(),
+          posteriorOffset:-offset.z,flexionDegrees:THREE.MathUtils.radToDeg(upper.angleTo(forearm)),
+          hingeDirection:forearm.clone().cross(upper).normalize().toArray()};
+      }),
       momentResidual:Math.abs(gravityMoment+muscleMoment),muscleNames:records.map(r=>nameOf(r.m)),
       movingBones:moving.length,visibleMuscles:records.filter(r=>r.m.visible).length,footBones:selected.filter(m=>footName(nameOf(m))).length,
       bodyWeight:pose.bodyWeight,boxWeight:LIFT_ASSUMPTIONS.load,muscleArm:L.lift.muscleArm??LIFT_ASSUMPTIONS.muscleArm};

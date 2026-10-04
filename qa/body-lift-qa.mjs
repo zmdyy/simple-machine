@@ -24,6 +24,7 @@ try{
         await input('bodyParamVal',t);const s=await snapshot(),a=s.assembly;
         assert(s.pointsFinite&&a.calibrated);assert.equal(a.style,style);
         assert(a.jointError<1e-6,'disconnected joints');assert(a.handError<1e-5,'hand detached from box');
+        assert(a.elbows.every(e=>e.posteriorOffset>0&&e.hingeDirection[0]>0),'elbow bends backwards');
         assert(a.maxReachError<1e-5,'unreachable box');assert(a.attachmentError<1e-6,'muscle detached');
         assert(a.momentResidual<1e-7,'unbalanced moments');assert(a.muscleForce>0,'negative extensor force');
         near(s.arms.l1,.05);near(s.arms.l2,a.distance);near(a.loadMoment,100*a.distance);

@@ -1,0 +1,208 @@
+{
+  "samples": 42,
+  "jointSamples": 20,
+  "minHandleBoneClearance": 0.002678996028264635,
+  "maxFingerJointError": 3.3306690738754696e-16,
+  "maxJointError": 4.972820174300706e-16,
+  "maxHandError": 4.3709524189038457e-16,
+  "maxAttachmentError": 6.326089538678209e-8,
+  "maxMomentResidual": 2.4158453015843406e-13,
+  "errors": [],
+  "initial": {
+    "calibrated": true,
+    "knee": {
+      "muscleArm": 0.03790993850937702,
+      "oppositeMoments": true
+    },
+    "hip": {
+      "muscleArm": 0.02609697044176202,
+      "oppositeMoments": true
+    },
+    "style": "stoop",
+    "focus": "lumbar",
+    "startDistance": 0.35,
+    "distance": 0.35,
+    "bodyArm": 0.24665783747431752,
+    "loadMoment": 35,
+    "bodyMoment": 73.99735124229525,
+    "totalMoment": 108.99735124229525,
+    "muscleForce": 2179.9470248459047,
+    "trunkDegrees": 75,
+    "kneeDegrees": 8,
+    "comparison": [
+      {
+        "style": "stoop",
+        "distance": 0.35,
+        "loadMoment": 35,
+        "bodyMoment": 73.99735124229525,
+        "bodyArm": 0.24665783747431752,
+        "muscleForce": 2179.9470248459047
+      },
+      {
+        "style": "squat",
+        "distance": 0.35,
+        "loadMoment": 35,
+        "bodyMoment": 37.13421635277236,
+        "bodyArm": 0.12378072117590788,
+        "muscleForce": 1442.6843270554473
+      }
+    ],
+    "pivotLabel": "腰骶部 O",
+    "effortLabel": "腰背肌",
+    "loadLabel": "重物 100 N",
+    "jointError": 3.3306690738754696e-16,
+    "handError": 3.4219371797089426e-16,
+    "fingerJointError": 2.7755575615628914e-16,
+    "maxReachError": 0,
+    "attachmentError": 6.326089538678209e-8,
+    "hands": [
+      {
+        "fingerJointError": 2.7755575615628914e-16,
+        "boxPenetrations": 0,
+        "minHandleRadius": 0.015678996028264634,
+        "gripError": 1.1102230246251565e-16,
+        "wristError": 3.4219371797089426e-16,
+        "fingers": 5,
+        "handMeshes": 27,
+        "tips": [
+          [
+            -0.2045081551542519,
+            0.5781106152200557,
+            0.4586508487415705
+          ],
+          [
+            -0.227825620019651,
+            0.5736826536168395,
+            0.4908239014886363
+          ],
+          [
+            -0.21062926985821084,
+            0.5757847824939756,
+            0.46088572521433674
+          ],
+          [
+            -0.21847019411406365,
+            0.5784834882356396,
+            0.4347646452926143
+          ],
+          [
+            -0.22162013118208174,
+            0.5840018686774782,
+            0.40262655843720274
+          ]
+        ]
+      },
+      {
+        "fingerJointError": 2.603703785810335e-16,
+        "boxPenetrations": 0,
+        "minHandleRadius": 0.015678996028264648,
+        "gripError": 1.1102230246251565e-16,
+        "wristError": 3.4219371797089426e-16,
+        "fingers": 5,
+        "handMeshes": 27,
+        "tips": [
+          [
+            0.20450814769226489,
+            0.5781105910974802,
+            0.4586505720126221
+          ],
+          [
+            0.227825620019651,
+            0.5736826536168393,
+            0.490823797180508
+          ],
+          [
+            0.21062926985821084,
+            0.5757847824939757,
+            0.4608856358073696
+          ],
+          [
+            0.21847019411406365,
+            0.5784834882356396,
+            0.4347647048972591
+          ],
+          [
+            0.2216201311820818,
+            0.5840018686774782,
+            0.4026265062831386
+          ]
+        ]
+      }
+    ],
+    "elbows": [
+      {
+        "side": -1,
+        "shoulder": [
+          -0.16299999999999998,
+          0.9952588111358572,
+          0.4904989830834874
+        ],
+        "elbow": [
+          -0.23553375462768583,
+          0.8261211907887885,
+          0.26358640118697496
+        ],
+        "wrist": [
+          -0.29000000000000004,
+          0.6450000000000002,
+          0.4350551807425961
+        ],
+        "posteriorOffset": 0.19524685626958227,
+        "flexionDegrees": 93.32302087816471,
+        "hingeDirection": [
+          0.9414471998207984,
+          -0.3330141085536407,
+          -0.052714072635318916
+        ]
+      },
+      {
+        "side": 1,
+        "shoulder": [
+          0.16299999999999998,
+          0.9952588111358572,
+          0.4904989830834874
+        ],
+        "elbow": [
+          0.23553375462768586,
+          0.8261211907887884,
+          0.26358640118697496
+        ],
+        "wrist": [
+          0.29000000000000004,
+          0.6450000000000002,
+          0.4350551807425961
+        ],
+        "posteriorOffset": 0.19524685626958227,
+        "flexionDegrees": 93.32302087816471,
+        "hingeDirection": [
+          0.9414471998207983,
+          0.3330141085536408,
+          0.05271407263531886
+        ]
+      }
+    ],
+    "momentResidual": 5.684341886080802e-14,
+    "muscleNames": [
+      "iliocostalis lumborum muscle",
+      "iliocostalis lumborum muscle",
+      "longissimus thoracis muscle",
+      "longissimus thoracis muscle",
+      "gluteus maximus muscle",
+      "gluteus maximus muscle",
+      "rectus femoris muscle",
+      "vastus lateralis muscle",
+      "vastus medialis muscle",
+      "vastus intermedius muscle",
+      "rectus femoris muscle",
+      "vastus lateralis muscle",
+      "vastus medialis muscle",
+      "vastus intermedius muscle"
+    ],
+    "movingBones": 215,
+    "visibleMuscles": 14,
+    "footBones": 54,
+    "bodyWeight": 300,
+    "boxWeight": 100,
+    "muscleArm": 0.05
+  }
+}
